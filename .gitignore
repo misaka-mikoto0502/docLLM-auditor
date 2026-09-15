@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+*.whl
+
+# 运行时数据（本地生成，不入库）
+refresh-models/config.json
+refresh-models/staged_models.json
+refresh-models/staged_report.md
+refresh-models/candidates.txt
+refresh-models/last_discover.txt
+
+# 备份 / 临时
+*.bak
+*_backup.json
+.DS_Store
+
+spec/A类规则整合_7类.md
+spec/rule_categories_A7.json
+spec/spec_rules.json
+files/
+docs/
+.workbuddy/
