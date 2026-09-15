@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="h36AHTQ5tCPreAFPp0k9bi">
+<head data-page-node-id="EHEsKZDV4Okz2JrxkmNuNV">
+<meta charset="UTF-8" data-page-node-id="nrfE3gQ2ROrCUg7JDwWzjJ">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="Q2C4CNNufVBSvUkD8wzZ3y">
+<title>api-recall 便携包 · 项目实现流程图</title>
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f7f7f5; --line:#d9d9d9; --line2:#b4b2a9;
+    --tx:#2c2c2a; --tx2:#5f5e5a; --tx3:#888780;
+    --blue-bg:#e6f1fb; --blue-bd:#185fa5; --blue-tx:#0c447c;
+    --gray-bg:#f1efe8; --gray-bd:#5f5e5a; --gray-tx:#444441;
+    --amber-bg:#faeeda; --amber-bd:#854f0b; --amber-tx:#633806;
+    --teal-bg:#e1f5ee; --teal-bd:#0f6e56; --teal-tx:#085041;
+    --purple-bg:#eeedfe; --purple-bd:#534ab7; --purple-tx:#3c3489;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 24px 64px;background:var(--bg);color:var(--tx);
+       font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+       font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto}
+  h1{font-size:24px;font-weight:500;margin:0 0 6px}
+  .sub{color:var(--tx2);font-size:13px;margin:0 0 28px}
+  h2{font-size:17px;font-weight:500;margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:14px;font-weight:500;margin:22px 0 10px;color:var(--tx)}
+  p{margin:0 0 12px;color:var(--tx2)}
+  code{font-family:"SFMono-Regular",Consolas,monospace;font-size:12.5px;
+       background:var(--surface);padding:1px 5px;border-radius:4px;color:var(--tx)}
+
+  /* ---------- 流程图 ---------- */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:0}
+  .row{display:flex;gap:14px;justify-content:center;width:100%;flex-wrap:wrap}
+  .box{border-radius:10px;padding:14px 18px;text-align:center;border:1px solid;min-width:150px}
+  .box .t{font-size:14px;font-weight:500;line-height:1.4}
+  .box .s{font-size:12px;line-height:1.5;margin-top:4px}
+  .b-gray{background:var(--gray-bg);border-color:var(--gray-bd)}   .b-gray .t{color:var(--gray-tx)}  .b-gray .s{color:var(--tx2)}
+  .b-blue{background:var(--blue-bg);border-color:var(--blue-bd)}   .b-blue .t{color:var(--blue-tx)}  .b-blue .s{color:var(--blue-bd)}
+  .b-purple{background:var(--purple-bg);border-color:var(--purple-bd)} .b-purple .t{color:var(--purple-tx)} .b-purple .s{color:var(--purple-bd)}
+  .b-amber{background:var(--amber-bg);border-color:var(--amber-bd)} .b-amber .t{color:var(--amber-tx)} .b-amber .s{color:var(--amber-bd)}
+  .b-teal{background:var(--teal-bg);border-color:var(--teal-bd)}    .b-teal .t{color:var(--teal-tx)}   .b-teal .s{color:var(--teal-bd)}
+  .in{width:210px}
+  .stage{width:440px;max-width:100%}
+  .driver{width:200px}
+
+  .arr{width:2px;height:34px;background:var(--line2);position:relative;flex:0 0 2px}
+  .arr::after{content:"";position:absolute;left:-4px;bottom:-1px;width:0;height:0;
+              border-left:5px solid transparent;border-right:5px solid transparent;
+              border-top:8px solid var(--line2)}
+  .merge{display:flex;flex-direction:column;align-items:center;width:100%}
+  .bus{height:2px;background:var(--line2);width:70%;max-width:640px;margin:0 auto}
+  .stem{width:2px;height:20px;background:var(--line2)}
+
+  .drivers{border:1px dashed var(--line2);border-radius:14px;padding:16px;width:100%;margin-top:8px}
+  .drivers .cap{font-size:12px;color:var(--tx2);margin:0 0 12px;text-align:center}
+
+  /* ---------- 表格 ---------- */
+  table{width:100%;border-collapse:collapse;margin:10px 0 6px;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--surface);font-weight:500;color:var(--tx);white-space:nowrap}
+  td{color:var(--tx2)}
+  td code{background:transparent;padding:0}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+  .card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface)}
+  .card .ct{font-weight:500;color:var(--tx);font-size:13px;margin-bottom:4px}
+  .card .cs{font-size:12px;color:var(--tx2);line-height:1.6}
+
+  .note{border-left:3px solid var(--amber-bd);background:var(--amber-bg);
+        padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0;font-size:13px;color:var(--amber-tx)}
+  footer{margin-top:48px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--tx3)}
+  @media print{body{padding:0}}
+</style>
+</head>
+<body data-page-node-id="IJz7tFYSnFiderrleQjWWh">
+<div class="wrap" data-page-node-id="XSsiGPrQ2mN4obzK1atCOj">
+
+<h1 data-page-node-id="mdqAf5IV1fSVomBHSOCSPl">api-recall 便携包 · 项目实现流程</h1>
+<p class="sub" data-page-node-id="py1ZUymGJbyoOCo0t8B5c5">华为云 API 参考文档合规审计工具链 —— 从 PDF 到违规 Excel 的完整链路</p>
+
+<h2 data-page-node-id="dobcJhBICkbj2Obh4fpeLV">一、全景流程图</h2>
+
+<div class="flow" data-page-node-id="CRIFXf22zeDXxqvXDptZNa">
+
+  <!-- 输入 -->
+  <div class="row" data-page-node-id="GSpol1ujGjDAIebVGQObPb">
+    <div class="box b-gray in" data-page-node-id="L9Qsb4JomkP4fCiBUx4kap">
+      <div class="t" data-page-node-id="ipiBxiFTHrhBgFCQ7Di6JL">API 参考 PDF</div>
+      <div class="s" data-page-node-id="r7oKGWpmUjq7dcW3nqza06">reference/API/*.pdf</div>
+    </div>
+    <div class="box b-gray in" data-page-node-id="pFrIZvo0SK5kDi334enarK">
+      <div class="t" data-page-node-id="78gGtGEEPYADT8FQjwSGHj">规则知识库</div>
+      <div class="s" data-page-node-id="gU9BYBBeh41u7ZHOarxtxM">spec/spec_rules.json · 61 条（58 条带 M/O）</div>
+    </div>
+    <div class="box b-gray in" data-page-node-id="4TD4SEHKPBcjJo8wI8msIF">
+      <div class="t" data-page-node-id="pmRgn6VCYIGezRcBkv097Q">A 档运行配置</div>
+      <div class="s" data-page-node-id="KPA7d2keQCL4izMyzhjh74">spec/rule_categories_A7.json</div>
+    </div>
+  </div>
+
+  <div class="merge" data-page-node-id="a3kXTRg1ML3WycEcVgTSbL">
+    <div class="stem" style="height:16px" data-page-node-id="LUs9HtpxrYKK0vmzNF4kvY"></div>
+    <div class="bus" data-page-node-id="253UemZE7CwoNxVYDheNyv"></div>
+    <div class="arr" style="height:28px" data-page-node-id="aZ7DY4EBK79JYZLvYhLHE9"></div>
+  </div>
+
+  <!-- S1 -->
+  <div class="box b-blue stage" data-page-node-id="TDLaXj8GxpYclQoDWC8Luw">
+    <div class="t" data-page-node-id="sCKDn7viWMJEBFUhaFyNpy">① 文档解析 &nbsp;·&nbsp; m5_parse_all.py</div>
+    <div class="s" data-page-node-id="CSdmjhDWLxfghlG3XRdnip">pdf_lib.extract_pages_clean → pages_clean.json（坐标级裁页眉页脚 + 表格重建）<br data-page-node-id="EualzLBIfALLrlHHHR61Gw">
+                   segment.segment_apis → units.json（API 标题 / URI 标签驱动切分）</div>
+  </div>
+  <div class="arr" data-page-node-id="QA4lqkOQIxmtOw4Dmj3EMg"></div>
+
+  <!-- S2 -->
+  <div class="box b-purple stage" data-page-node-id="mCyaT1SZz34d0MOjjNwxyW">
+    <div class="t" data-page-node-id="Y6RDgKykqiNPIEDrW60NWL">② 任务矩阵 &nbsp;·&nbsp; build_tasks()</div>
+    <div class="s" data-page-node-id="dSbOVBGIDKavCjlm6iBB1w">deprec.partition_units 剔除废弃条目 → resolve_rules 按前缀解析规则全文<br data-page-node-id="LDMF1S7iBOfWdeAqgG3GVJ">
+                   每条目 × G1-G6（33 条） + 整篇 DOC×3 → N×6 + 1 个判定任务</div>
+  </div>
+  <div class="arr" data-page-node-id="auHfDMN5jDj4kYAaSkYaaO"></div>
+
+  <!-- S3 -->
+  <div class="box b-amber stage" data-page-node-id="RJDnXAtAfocZp9L49SeFBG">
+    <div class="t" data-page-node-id="k281HcdFORs00MFr6oOG9K">③ LLM 裁决 &nbsp;·&nbsp; cmmatch.adjudicate()</div>
+    <div class="s" data-page-node-id="X6Sa7Jc3EFLk2TtBcVrjvP">build_prompt（任务 → 铁律 → 判型示例 → 输入 → 规则卡 → 输出契约）<br data-page-node-id="FWnJb82fLQDxAZtnuAxPRv">
+                   recall.call_small_model → 本地 vLLM（并发 / 断点续跑 / 连续失败熔断）<br data-page-node-id="dw033J05xCVeGWdtnFBgWg">
+                   grounded() 逐字落地校验：confirmed 证据不落地 → 降级为 uncertain</div>
+  </div>
+  <div class="arr" data-page-node-id="qqPccephELup0xlRmA3bvT"></div>
+
+  <!-- S4 -->
+  <div class="box b-teal stage" data-page-node-id="lMqJbBle4q8CXpMQsqgeke">
+    <div class="t" data-page-node-id="KXQlpSMAo8Jr6XOp1yvAXW">④ 结果产出 &nbsp;·&nbsp; results + Excel</div>
+    <div class="s" data-page-node-id="yuxkZFBerIEtLBGfNAgMvT">collect_stats / render_md → results.{json,jsonl,md} · stats.json · run_log.txt · llm_call_log.jsonl<br data-page-node-id="8zgdak4jO0ChiejhQxwSi2">
+                   gen_results_xlsx.py → 判定明细 / confirmed 违规 / 违规汇总 三表</div>
+  </div>
+
+  <!-- 驱动 -->
+  <div class="drivers" data-page-node-id="UKz8j21RZ8AXVVhVFZ3Vpq">
+    <p class="cap" data-page-node-id="mxl8olYyFbEaClpfEJQuVy">驱动入口（四种，均复用上方 ①→②→③→④ 主链路）</p>
+    <div class="row" data-page-node-id="U8dCKu2CALWCVvnamqpVpA">
+      <div class="box b-gray driver" data-page-node-id="qi7clxVkOK9MfSXKIqXG8d">
+        <div class="t" data-page-node-id="kpNcvrxg4Nz4Ix5Gsr16wY">run_all_products.py</div>
+        <div class="s" data-page-node-id="kgu23DkCl4ToBGhyojFtBv">批量：遍历 audit/work 下全部产品，逐个跑验证并转 Excel</div>
+      </div>
+      <div class="box b-gray driver" data-page-node-id="n4LFrt5vVBenCVqFk4UHNF">
+        <div class="t" data-page-node-id="1udqug9P6BvqYX4XQL5MGS">cm_demo_server.py</div>
+        <div class="s" data-page-node-id="HRZvmfDILSa79IWuZLh5yQ">Web：单网页选产品 → 选条目 → 逐类别 / 整目录双路判定</div>
+      </div>
+      <div class="box b-gray driver" data-page-node-id="9A9uQT1XdmDXbtqMIvtNr7">
+        <div class="t" data-page-node-id="FXFzkOovIScvkPQzsgl7M0">showcase_run.py</div>
+        <div class="s" data-page-node-id="3gUJyGbyD4i2HMWqRrpkgm">演示：10 个票证端点定位真实单元 → 走主线裁决</div>
+      </div>
+      <div class="box b-gray driver" data-page-node-id="rVs0pYLFQpBlEAWSE2uBfe">
+        <div class="t" data-page-node-id="dAnj5pRKFhUykSsAQCRKzO">agent_audit.py</div>
+        <div class="s" data-page-node-id="UuitWtZjhPSwEH1f5KH0er">替代：build / agent / process 三段，用 Agent 推理替换 vLLM</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<h2 data-page-node-id="XEe0C74nwqfDX3xqqfARl2">二、各阶段拆解</h2>
+
+<h3 data-page-node-id="nrD4mzZ5wS7nkddvaILVYS">① 文档解析 —— PDF 文本 → API 单元</h3>
+<table data-page-node-id="qOqJSnNfsuYRyHvIvLfGOC">
+  <tr data-page-node-id="7cbucePXTEUZ8Bffbt03WT"><th style="width:26%" data-page-node-id="yd5H5hBZB5YfEdGz3zdRqg">环节</th><th style="width:26%" data-page-node-id="zbeQxmj8YEiBkFpErAnVKD">实现</th><th data-page-node-id="kFbHpwS8Un9IUvQMMIaI4g">说明</th></tr>
+  <tr data-page-node-id="hUdGwmSDdOu9pGJwPzNMpf"><td data-page-node-id="19rphNLLzixI5jeizP73U9">文本提取</td><td data-page-node-id="Oo3GGJzQSRIXu1dtyX2cBg"><code data-page-node-id="oHdlWmAUu1FLjryPHzbxXE">pdf_lib.extract_pages_clean</code></td>
+      <td data-page-node-id="9HlERNQGGZNKCwuCphapZo">PyMuPDF 取文本层；按坐标带裁掉页眉（&lt;9% 页高）与页脚（&gt;90% 页高）</td></tr>
+  <tr data-page-node-id="FKddFviviDQJ5qzYexws2R"><td data-page-node-id="MNCsddk3C04id4guzqz0dM">表格重建</td><td data-page-node-id="vZEjlZh8l8otCwOIl4AOlt"><code data-page-node-id="JOdMt5hJTtgj8VNiB9R9wW">_table_lines / _cell_text</code></td>
+      <td data-page-node-id="nm9B8f4TkiUXI5XthvKNnu"><code data-page-node-id="8XFnHSWhcqvjMzrHjTIniW">find_tables()</code> 取结构，word 级 bbox 精确裁单元格，按 y 聚类成行，输出行首带 <code data-page-node-id="QVdoeIfs6s7oPc4p9Nhw1m">|</code> 的管道行（防误命中分段正则）</td></tr>
+  <tr data-page-node-id="Bfth8gRcfznaBH1JremEfb"><td data-page-node-id="SxT0Xun6NMuhNXkHyvTG6O">缓存</td><td data-page-node-id="ZGQedf4HihOOBEXm6wjDfd"><code data-page-node-id="nSdKiiR1kVN7ll8rTAwQxB">pages_clean.json</code></td>
+      <td data-page-node-id="ON7WsSvVfTJxcHQJkDzwMv">落 <code data-page-node-id="CYsueaYuSDJXr941tJVtLo">audit/work/m5/&lt;产品&gt;/</code>，ModelArts 特例放 <code data-page-node-id="KoidrQHQFhNleiCbyB1fk4">audit/work/</code> 顶层；已存在则秒回，<code data-page-node-id="3sZJuSZe39uIp8lN8JoJIl">--force</code> 重解析</td></tr>
+  <tr data-page-node-id="jp6Qd29roGSVOpyN1qgPMc"><td data-page-node-id="dAeG0rnvBAvPDk5LaPgzVW">条目切分</td><td data-page-node-id="oysZGaVT6B664nIbdCWs8Z"><code data-page-node-id="jBk9GbUDpa7O7bXgA573ae">segment.segment_apis</code></td>
+      <td data-page-node-id="aNiBeDdqWovdHb26ZJ3udo">以「API 标题（N.N 中文 - English）」为条目起点，缓冲功能介绍/授权信息等前导，遇 <code data-page-node-id="pA9bhpsxTZOWVD3VV6CzjX">URI</code> 标签 + METHOD path 正式开单元；支持折行 URI 合并与兜底标题回溯</td></tr>
+  <tr data-page-node-id="xQvKWFjwO1s8BFhmGzjD6V"><td data-page-node-id="w85wSH4KzMjacMKBQPcywt">产物</td><td data-page-node-id="izzRacc64SOM1ZLyWs1YQG"><code data-page-node-id="Rzfy4sDXjWI6NnJInU6V3d">units.json</code> + <code data-page-node-id="IE2orYqbJ52bguvRNsLwC1">m5_report.md</code></td>
+      <td data-page-node-id="RPJYgfUIo0CaVHanK3LcAd">单元字段：chapter / no / title_cn / api_en / method / path / start_page / text</td></tr>
+</table>
+
+<h3 data-page-node-id="7C1WR6zBxa0eXyEBaxrKiE">② 任务矩阵 —— 条目 × 规则类别</h3>
+<table data-page-node-id="AD4xh2IZ1m8CXdx46PdrEh">
+  <tr data-page-node-id="bKGHgfmzdaZ9bFAlAnKsIG"><th style="width:26%" data-page-node-id="49z57rS7PVHgwk8vVkVDWh">环节</th><th style="width:26%" data-page-node-id="TOTnBoqzpmT2a9JbaYujc1">实现</th><th data-page-node-id="tGXXK3z0WF0xYv1toQC4cJ">说明</th></tr>
+  <tr data-page-node-id="cOgau05HZAemmttPID5NRJ"><td data-page-node-id="M6qEi0fzQif5qwOFSCq8zG">规则装载</td><td data-page-node-id="Cgx9sqTOx25i2rw3wqpylv"><code data-page-node-id="jGiJY3fvF0zFyTfKerk1Kz">pdf_lib.load_rules</code></td><td data-page-node-id="DtdkwXE71YGJep6SWr4fpr">读 spec_rules.json → <code data-page-node-id="RYdnKPDi0LhfICMVDgFp75">by_no</code> 索引（规则号 → 完整规则，含 text / blocks / keywords）</td></tr>
+  <tr data-page-node-id="HRisaad9Dao7RVzt8aLgWi"><td data-page-node-id="IdKCdUiDben27iX4AHuG08">废弃剔除</td><td data-page-node-id="R2zklRJaLrQ7kUKK9lS4Hf"><code data-page-node-id="SF8VSOjznrQnKy78z76u8R">deprec.partition_units</code></td><td data-page-node-id="G0Ne9mH8BPs5XLwzmNZjJd">保守口径：仅当 title / path 命中「废弃 / 弃用 / deprecated / 已下线」才排除，正文命中不算（宁可少排除）</td></tr>
+  <tr data-page-node-id="hRtB5uaGVlBae3wcEJM3Jb"><td data-page-node-id="pEwe4KhPzDcaz2njfLCjGS">规则解析</td><td data-page-node-id="yKwYOzspZiFQg1skQZLNak"><code data-page-node-id="pvEI5UzC5cHfcerlqWXoqw">cmmatch.resolve_rules</code></td><td data-page-node-id="K2uTQZigAK5ueDNBRGiGr3">配置里写前缀（如 <code data-page-node-id="nBkgSa3blLMAswxcv4jjUd">ARG-010</code>），运行时按前缀匹配真实规则号（<code data-page-node-id="0gBtElFgy5qAt5Snl9q7qg">ARG-010-01-2507-2507-M</code>），兼容多后缀版式</td></tr>
+  <tr data-page-node-id="ajjslvoS0sIqGsUMhyyEh1"><td data-page-node-id="g9HUQ87TH2rxVkJLqknoED">任务枚举</td><td data-page-node-id="WD4cq8fvNGBFXGhkciMDAA"><code data-page-node-id="Isj9pWq0gH1vHiRcmEWMhB">build_tasks</code></td><td data-page-node-id="Q63JHvXlC3Qn5izaxped63">unit 模式：每条目 × 6 个类别；doc 模式：整篇 1 个任务（DOC-010/020/030）</td></tr>
+  <tr data-page-node-id="KVaBP2beRawgb94QO02yjH"><td data-page-node-id="9oVXQBGUizcaILdc74CCeg">试运行</td><td data-page-node-id="PRCWpKTwa8xM8ELW3r03Ru"><code data-page-node-id="vaYxUcdd1ehjgAjQF3Vlf5">--dry-run</code></td><td data-page-node-id="pGneza0DI83DdynSkaYqt1">只枚举任务、校验规则解析与 prompt 长度，不调 LLM、不改产物</td></tr>
+</table>
+
+<h3 data-page-node-id="FHII6ZbF4pf4AjMEBZA50m">③ LLM 裁决 —— 单条目 × 单类别 → per_rule 判定</h3>
+<div class="grid" data-page-node-id="WXg2omdiG3rB3p5kA37HQk">
+  <div class="card" data-page-node-id="QzW7bGv01NFanUKBmHs110"><div class="ct" data-page-node-id="PEaCBdncu9mfFzU2iPrP3W">提示词骨架（固定装配顺序）</div><div class="cs" data-page-node-id="2zAEBUEDOHsbp2yTRiEDOQ">
+    TASK → IRON_RULES（4 条铁律 + 5 步判别）→ EXAMPLES（甲/乙/丙 占位示例）→ 输入 → 规则卡 → 输出契约。关键指令放首尾，输入/规则夹中间，减小长文信息丢失。</div></div>
+  <div class="card" data-page-node-id="KGJK3eoVHPCTHZgK0BUteV"><div class="ct" data-page-node-id="fawJIEgo2oJaD41tlVcFwn">规则卡只送原文</div><div class="cs" data-page-node-id="x1L83tsDAzc1A4wAC3JFs0">
+    只送规则号 + 正文原文 + 规范示例，<strong data-page-node-id="ArRw3qbFtuUzZunJCtP9LY">不送</strong>中文要点/checks（转述与原文非 100% 一致，喂模型会叠误差）。</div></div>
+  <div class="card" data-page-node-id="V2RNsaW2orPhz2LXMtaJwL"><div class="ct" data-page-node-id="OqU8F6LsANTo5kNv2x5QvN">长文本截断</div><div class="cs" data-page-node-id="yp0trkhYXfT4UOit3o6GGd">
+    <code data-page-node-id="uw8bHBrIgTOaJ5zrBpUvet">_cap_text</code>：首 35% + 各规则关键字命中窗口 ±400 字符 + 尾 15%，默认上限 28000 字符（可用 <code data-page-node-id="AqYyD84iKwtnbBKM1ENYFR">CMM_CAP</code> 覆盖）。</div></div>
+  <div class="card" data-page-node-id="BxtizEMq3SKYld8ltu7V1O"><div class="ct" data-page-node-id="mdagvuoqm3APORcZRdtdcf">grounding 校验</div><div class="cs" data-page-node-id="UzhlAjxeUoQ3VbG6SWAdqM">
+    先整段去空白子串匹配；失败再 token 级（逗号/顿号/分号分隔的每片都必须命中）。<strong data-page-node-id="fLkA7RO5ywiNMrHkQds07c">confirmed 未落地 → 降 uncertain</strong>，防脑补证据。</div></div>
+  <div class="card" data-page-node-id="WkGZnBM03e0rumHKOLPspZ"><div class="ct" data-page-node-id="Bc2wYgvdz5mJe3t5kcM0Jc">并发与容错</div><div class="cs" data-page-node-id="zfJur9FvQNNGqncKioN1TW">
+    ThreadPoolExecutor（默认 6-10 并发）；每任务完成即追加写 <code data-page-node-id="1HEpqzwXpxRmjV5kEJS8Po">results.jsonl</code>；连续失败达 <code data-page-node-id="FllEx6zNt3ye6DqtoPW39R">--max-fail</code> 熔断，保留已跑部分。</div></div>
+  <div class="card" data-page-node-id="bou4oOh29n30x3EFEHa1UM"><div class="ct" data-page-node-id="lxUAQztcamEAYRYywXS6fl">断点续跑</div><div class="cs" data-page-node-id="YrCE4jEoSB2sMeQpxuyC4c">
+    key = <code data-page-node-id="AvGIgwH1LwXimpJQNO1f2i">cat|method|path|start_page</code>；<strong data-page-node-id="FHPlcHhrrEx5c5n3QEC7TI">只有 ok=True 且有 per_rule 才算完成</strong>，失败记录下次自动重试（避免数据空洞）。</div></div>
+</div>
+
+<h3 data-page-node-id="l9SluYWyjrSixqLHPCwyhW">④ 结果产出 —— 结构化结果 → 可筛选 Excel</h3>
+<table data-page-node-id="5p6Z1EuevBpf86tyR3HrGh">
+  <tr data-page-node-id="xFtNX4Nd8uPaMR1J1fw7Bg"><th style="width:30%" data-page-node-id="JNBRuiGc9Cs2MyJvvDGCYP">产物</th><th data-page-node-id="hFJrEB8t0dN7Bj6YdZOpjN">内容</th></tr>
+  <tr data-page-node-id="qsMp6uI5HKqk9h8URy05Ix"><td data-page-node-id="bwuuYnaAa8lToTdZhHdiBJ"><code data-page-node-id="3BUmdAlWzj04BdWGkS3FYh">results.jsonl</code></td><td data-page-node-id="l4tILzNGyor0UQL0kIt3En">追加式原始记录，断点续跑的凭据</td></tr>
+  <tr data-page-node-id="A22aQrtz4FIKo6tWIuTiO3"><td data-page-node-id="tDFyqoBtc97fEDANqhwDaG"><code data-page-node-id="cxGH7Vmii0O8vP1myhzx9q">results.json</code></td><td data-page-node-id="jqWLZcvSGhLGQJxjZkWqjs">全量重读 jsonl 后的完整记录数组</td></tr>
+  <tr data-page-node-id="jHg53AqtOYynjm6W2Llxsz"><td data-page-node-id="BqFSOSGj7yynPQS54hBfoo"><code data-page-node-id="454kqXwgQtBVgSIVKmcSUd">stats.json</code></td><td data-page-node-id="L8Grnoj9iCMJY0xzFwoS3L">按类别 / 按规则的 confirmed-dismissed-uncertain 计数、去重违规（rule → 接口数）、任务成败</td></tr>
+  <tr data-page-node-id="pNZwCdmhEkcpx0fzVeCQBi"><td data-page-node-id="t6SmjW5lHvDg8rFbKJF9OL"><code data-page-node-id="hqNZqMjKUVYvGlAC8DJPQ7">results.md</code></td><td data-page-node-id="rH2Q4KACWe7JwBpje3amr2">人读报告：去重确认违规排行 + 逐条 confirmed 记录（含证据）</td></tr>
+  <tr data-page-node-id="COO9CH70X5JZMWJryZzkvV"><td data-page-node-id="8ZQ9y5Qjj1TnNtNpgCD8mF"><code data-page-node-id="2vwut8q7JBMwVHmfEhtTw0">run_log.txt</code></td><td data-page-node-id="abZu4jqVaSyDEAaHbjRHXG">运行参数、续跑跳过量、耗时、熔断情况</td></tr>
+  <tr data-page-node-id="oz20nDFREmJyEl0npxhWVk"><td data-page-node-id="wfDMm4ssrjkBpbdm4qvDVY"><code data-page-node-id="ARHXEMG38FtqIXm7jPhLKZ">llm_call_log.jsonl</code></td><td data-page-node-id="f6GfIYIXMkdKAoEXwc82lW">每次 LLM 调用的耗时 / prompt 长度 / 原始输出，供复盘</td></tr>
+  <tr data-page-node-id="SaZcNiKO4BExnFfPt9TEv5"><td data-page-node-id="hGXPbsyojK4i9vECcfh2Qo"><code data-page-node-id="kSHCLTUwHMBFg0ZTAEC1ZZ">results.xlsx</code></td><td data-page-node-id="uHYncFTM5PsMEyj7ShU6zt">三表：判定明细（接口 × 规则 × 结果，带筛选冻结）、confirmed 违规（人工定案）、违规汇总（按规则聚合 + 印刷页码）</td></tr>
+</table>
+<p style="margin-top:8px" data-page-node-id="7W9X0XFUbwiAykoDJVpUlH">印刷页码由 <code data-page-node-id="stfhbexlDKrdS5PhfGa0OI">_annotate_printed_pages</code> 用 PyMuPDF 读页脚整行数字补上，best-effort，失败不中断主流程。</p>
+
+<h2 data-page-node-id="bRBYDiEFWEfLBRDLG5mAtO">三、规则分档与判定范围</h2>
+<table data-page-node-id="S65VWsp1lREBKKxjPt8zJF">
+  <tr data-page-node-id="ZwyoaiZ3VOvdr5ox4Gg5JA"><th style="width:16%" data-page-node-id="QHLFAsJlB3sqLMOBqVhDkr">档位</th><th style="width:12%" data-page-node-id="tNoFwvbn129XH9HBJZPEvN">数量</th><th data-page-node-id="sJwazd8mc0pymf7trJOhL0">说明</th></tr>
+  <tr data-page-node-id="m0YyY1ZtrrLhTkwAU3b5LA"><td data-page-node-id="uAVSaV2mTlCQvxWSqo7FCA">A 档（执行）</td><td data-page-node-id="LefFfKtJVSO8g1kyC93zzC">33 条 / 6 类</td>
+      <td data-page-node-id="Bz89PlMyGMrnTBjcMZJA3n">G1 请求 URI 与版本 · G2 动词·状态码·错误码 · G3 传输协议·编码·安全 · G4 请求/响应消息头 · G5 参数命名·通用词表·易用性 · G6 查询·分页·过滤·排序·时间</td></tr>
+  <tr data-page-node-id="rZsDraCWyG6nCvtvMpAZZj"><td data-page-node-id="XWRhgdn1np0qD3Y0xHUqPe">DOC（整篇级）</td><td data-page-node-id="YtlvwAuo5fOHLN1BNQBiuQ">3 条</td><td data-page-node-id="sKAcSpLLDmu6VNzzNTIpqu">DOC-010/020/030 —— 单条目给不出证据，需整篇文档判定，demo 默认不执行</td></tr>
+  <tr data-page-node-id="u4Wm2u9RyQnmqUVYNdB1SE"><td data-page-node-id="9MVH8MUwmwflsEgUi7iSld">B 档（排除）</td><td data-page-node-id="RGgJJ8xuA8dhC8RIHHrEdP">4 条</td><td data-page-node-id="JlHpyYxjnYO5qcuUXWZB5g">VER-030 / QUE-050 / BAS-060 / ASY-010（需跨接口聚合）</td></tr>
+  <tr data-page-node-id="ePwrdCBZvezZI0bIRo5ftF"><td data-page-node-id="gZF1Uy1AOx5N6s3fhctUBm">C 档（排除）</td><td data-page-node-id="u08SfAqM0bSpqqPVvlydhC">18 条</td><td data-page-node-id="52Ox7sChO4q3qd4k4Ml4dR">BAS/SLA/PUB/INT 等流程、性能、发布类规则</td></tr>
+</table>
+<div class="note" data-page-node-id="BDDhqUVYAXDuQZQNUBOdaE">
+  <strong data-page-node-id="NOcQ32digSTBSuRYtnuo1K">判定取向</strong>：不漏报 &gt; 不错杀。同一违规常被多条规则冗余覆盖（如 STC-010 / STC-040），是刻意的召回设计；去重在 <code data-page-node-id="ZEKi7z1pSEGswTv5ECSyip">collect_stats</code> 阶段按「规则 × 接口」完成。
+</div>
+
+<div class="note">
+  <strong>33 这个数怎么来的（防记混）</strong>：A 档源全量 37 条 − DOC×3（整篇级，单条目给不出证据）− ASY-010（需跨接口聚合，归 B）= <strong>33</strong>。实测 <code>resolve_rules</code> 对 6 个类别的 33 个前缀<strong>全部</strong>解析到真实规则，零缺失；其中 Mandatory 29 条、Optional 4 条（ARG-040 / ARG-050 / ARG-060 / FIL-010）。<br>
+  已知陈旧注释：<code>cm_demo_server.py:66</code> 仍写「G1-G6, 34条」，与该文件第 3 行正文及配置实际值 33 不一致，是 2026-08-19 复核时漏改的。
+</div>
+
+<h2>四、两阶段设计：粗读 → 精修（设计意图 vs 便携包现状）</h2>
+
+<p>项目<strong>设计上</strong>确实是两步 LLM：阶段一粗读召回 → 阶段二精修裁定。但<strong>便携包里阶段一没有接线</strong>，主链路现在是单程全量精判。</p>
+
+<h3>设计意图（源码注释明确写了两阶段）</h3>
+<table>
+  <tr><th style="width:14%">阶段</th><th style="width:26%">实现</th><th>职责</th></tr>
+  <tr><td>阶段一 · 粗读</td><td><code>recall.run_recall</code><br>+ <code>detect.detect_unit</code></td>
+      <td><strong>只缩小候选范围，不做判定</strong>。规则层（9 个客观探测器）出 high/medium/low 三档；LLM 层对每个接口召回「最可能违反的 top-k 语义规则号」，最多 8 条。客观项（URI 风格 / 版本号 / 计数命名 / query 驼峰）从 LLM 候选集排除，不重复判。</td></tr>
+  <tr><td>阶段二 · 精修</td><td><code>cmmatch.adjudicate</code></td>
+      <td><strong>法官式复核</strong>：一条目 × 一类别全部规则全文 → 逐条 confirmed / dismissed / uncertain，带逐字证据与 grounding 校验。</td></tr>
+</table>
+<div class="note">
+  直接证据：<code>recall.py:1</code>「阶段一(初筛/召回)修正版」· <code>recall.py:87</code>「你是 API 文档合规审计的【粗略规则召回器】——只负责缩小候选范围，不做任何判定」· <code>recall.py:95</code>「不做裁判……判定的唯一权威是第二阶段」· <code>detect.py:287</code>「让 LLM 语义层召回、交由阶段二复核」。
+</div>
+
+<h3>现状：便携包里阶段一是死代码</h3>
+<table>
+  <tr><th style="width:36%">检查项</th><th>结果</th></tr>
+  <tr><td><code>detect</code> 被哪些入口 import</td><td><strong>无</strong>。仅 <code>recall.py:14</code> 内部 import，而各入口只用到 <code>recall.call_log()</code></td></tr>
+  <tr><td><code>run_recall</code> 被谁调用</td><td><strong>无</strong>。只在 <code>recall.py:217</code> 定义，全仓库无调用点</td></tr>
+  <tr><td>主入口 <code>cm_run_product.py</code> 实际路径</td><td><code>segment_apis</code> → <code>build_tasks</code>（33 条全量）→ <code>cmmatch.adjudicate</code>，<strong>没有粗读过滤</strong></td></tr>
+</table>
+<p style="margin-top:10px">所以便携包跑的是「<strong>一次精判打满</strong>」：每个条目 × 6 个类别 = 33 条规则全喂给 LLM，靠提示词铁律和 grounding 控制质量，而不是靠粗读先筛。README 里「auditlib 只带 7 个模块，剔除了 stage1 用到的 refine/report/resource_scope」也印证阶段一被裁掉了。</p>
+<div class="note">
+  <strong>影响</strong>：算力上是「33 条全量」而非「top-8 候选」，成本明显更高；好处是不漏——粗读漏掉的规则精修阶段也捞不回来，全量判没有这个召回损失。若后续要接回阶段一，接线点在 <code>cm_run_product.build_tasks</code>，把 <code>run_recall</code> 产出的 <code>llm_suspects</code> / <code>rule_candidates</code> 作为类别过滤依据即可。
+</div>
+
+<h2>五、目录与职责</h2>
+<table data-page-node-id="XvkZeEnx2muRkiiomayjvw">
+  <tr data-page-node-id="tmnWof2esdASJC0sKi5508"><th style="width:34%" data-page-node-id="RyOHYEYGtfBj0ZCrinDKYS">路径</th><th data-page-node-id="AmcpR4uaCl3AP0dnNaepiv">职责</th></tr>
+  <tr data-page-node-id="DbfMF6rQoLT4tMfpolpdXc"><td data-page-node-id="QUoZ8iF7qfpvIU7A37CDeC"><code data-page-node-id="Uz7iAt3FUa2rONpP2AsNFP">.tools/scripts/m5_parse_all.py</code></td><td data-page-node-id="SEb2cPASAMIEHbrpGRQgS8">解析入口：PDF → pages_clean → units（依赖 pymupdf）</td></tr>
+  <tr data-page-node-id="mMd3gIoO288oP0edGb51lc"><td data-page-node-id="ij4EHzwmEGfdPCdFYvjfqK"><code data-page-node-id="AQqpeFOAKYhhPAyzZGl2C6">.tools/scripts/cm_run_product.py</code></td><td data-page-node-id="HlwJVsAx4nlG3Kp200iETc"><strong data-page-node-id="UzXzEaXEEpUKZ8qK83Ss5p">主入口</strong>：单产品全量验证（G1-G7），并发 + 续跑 + 熔断</td></tr>
+  <tr data-page-node-id="llHOGUG4VkSHy2uFOchmIk"><td data-page-node-id="80WFnaY9rEB3SwWgd1y5le"><code data-page-node-id="gTnv5fveRoAKVB9oYMhOtm">.tools/scripts/cmmatch_run.py</code></td><td data-page-node-id="KDIOaaWdOCpKtFoLAm5aBb">被主入口复用的工具层（task_key / load_done_keys / adjudicate_task / 印刷页码）；可独立跑 ModelArts</td></tr>
+  <tr data-page-node-id="Jetkr8QL6NHmjSPzdoSYRq"><td data-page-node-id="A9JIR40McxSPTtEvwsBwbO"><code data-page-node-id="vRHBAZjJD9K2mYbgvQFwsC">.tools/scripts/run_all_products.py</code></td><td data-page-node-id="UhxEVeBTB0SnNSABihONVD">批量编排：自动发现所有产品缓存 → 逐个验证 → 转 Excel</td></tr>
+  <tr data-page-node-id="CwP4u1vtTGCeZWe1BQybXl"><td data-page-node-id="ggN7WqbDVHJTjXHvJGKSMA"><code data-page-node-id="SJfmo3xeysLafYaPe9uonX">.tools/scripts/showcase_run.py</code></td><td data-page-node-id="tNA0F9gs2YqzJSAWKuIqcG">展示用例：内嵌 10 个票证，端到端走一遍主线</td></tr>
+  <tr data-page-node-id="zy68HOTUHcxRgm5IGrCIG4"><td data-page-node-id="s8YA7a4xG3Hp6t6j9Xkscz"><code data-page-node-id="RA7RxhfrHcmPyd5Jdtdqqe">.tools/scripts/cm_demo_server.py</code></td><td data-page-node-id="5GM65NOYlo7s6LpIDmm7k1">Web demo：stdlib http.server，懒加载产品缓存，双路召回</td></tr>
+  <tr data-page-node-id="RosVhM4fELjSEiqV6rmCtc"><td data-page-node-id="HEEJ6j25f3C6UbbSsRWxXm"><code data-page-node-id="Igebo3ZW1gZL7y31UKfImR">.tools/scripts/gen_results_xlsx.py</code></td><td data-page-node-id="VAxr3oPSCRJlAkjcsz05C4">results.json → 三表 Excel（依赖 openpyxl）</td></tr>
+  <tr data-page-node-id="nvaw7lAYA043tbJX1tTh0N"><td data-page-node-id="Jt3hDJ3L7jHG8ogIFkV2nc"><code data-page-node-id="ZKlWoxjmPKoTBGMm3DpxJz">.tools/scripts/gen_rule_A_doc.py</code></td><td data-page-node-id="oVF4lzbv7FXcJipqq0jcKd">由 spec_rules.json 重生成 A 类归类 md</td></tr>
+  <tr data-page-node-id="Xh8dlANsfAFj3FKEAIiTMd"><td data-page-node-id="KLFpZDn8LJU1snNfx8laKm"><code data-page-node-id="LLZpAt00htT2agoUwH7zeD">.tools/scripts/agent_audit.py</code></td><td data-page-node-id="j8MkHuiHvONvlU14XF6HgC">三阶段 Agent 推理模式，替代外部 vLLM</td></tr>
+  <tr data-page-node-id="gT5aCOp1fF18asJBIxSA0q"><td data-page-node-id="yqIsE4irfFjq5wsaZmx5aX"><code data-page-node-id="pM0FKGRvFxnu8NExxchkR5">auditlib/pdf_lib.py</code></td><td data-page-node-id="J74CLfG5l5pnVHCmXXxnoT">PDF 提取清洗、表格重建、规则装载、URI 解析</td></tr>
+  <tr data-page-node-id="hXXTLE1toRu5bnu8YgrfZX"><td data-page-node-id="JlJVQy22JaCkq19oDArxdC"><code data-page-node-id="im59M1f6CT0mBylVLfkefg">auditlib/segment.py</code></td><td data-page-node-id="VAjgPiNdVCML59cv1mq3A9">页面文本 → API 单元切分</td></tr>
+  <tr data-page-node-id="FNZaSkZOI1k7mRCsXBxrUW"><td data-page-node-id="JQUPp29pcNw0GcfxXAg3l2"><code data-page-node-id="sqA6sG24dBHBmoc3KS95w9">auditlib/cmmatch.py</code></td><td data-page-node-id="9GXB5uTtyXkn9jT0N87qXS"><strong data-page-node-id="lOoQmjoC0D7evg8ljInBEs">核心</strong>：提示词装配、adjudicate / doc_adjudicate / catalog_adjudicate、grounding、统计与报告渲染</td></tr>
+  <tr data-page-node-id="QeXATeNE0FGnDD6yOrGNHV"><td data-page-node-id="yxHR5BXkYkcSOGlOQvNULT"><code data-page-node-id="T98kjik2NWQABivLqJAZT9">auditlib/recall.py</code></td><td data-page-node-id="br1cArwxqCfJIIJqPZbiAF">LLM 客户端（OpenAI 兼容 / urllib 直连、禁用系统代理、429 退避）+ 阶段一语义召回 <strong>（阶段一在便携包内未接线，见第四节）</strong></td></tr>
+  <tr data-page-node-id="8611mygVnqWDMUjWMh0P5l"><td data-page-node-id="UP3GyX1pGFVjGDsLCtvQf3"><code data-page-node-id="BpmJnEdtPUkzt3afbk3KsF">auditlib/detect.py</code></td><td data-page-node-id="D9ty2MG26TTWfeaOmCiZdJ">客观探测器（URI 风格、版本号、分页、计数命名、query 驼峰等）</td></tr>
+  <tr data-page-node-id="QPBkd9Cjy2jK1Ve4DH0UlM"><td data-page-node-id="WGdPwPpsoYh2dVNvCwlfhf"><code data-page-node-id="7jD1jd3sSmrhCPctEvNMmE">auditlib/deprec.py</code></td><td data-page-node-id="jGbg6Q35pAex2QrEO01fF3">废弃条目确定性分类</td></tr>
+</table>
+
+<h2>六、一键运行顺序</h2>
+<table data-page-node-id="NS7jvLjpvzA86GKednn5tJ">
+  <tr data-page-node-id="cnPKcvUEXQ96VhHv3X2ZfD"><th style="width:8%" data-page-node-id="OYjIejlBgIZXk2Dq2Ao13B">步</th><th style="width:52%" data-page-node-id="cdIljzrzCU45ILRmaCt9V9">命令</th><th data-page-node-id="zNF6OSsX6e69QT9M00vKLE">说明</th></tr>
+  <tr data-page-node-id="Fehh5CTnaskK2KUpvGbXLG"><td data-page-node-id="rvJtovVQId35F5pSXkHVLH">0</td><td data-page-node-id="W3tQicEcn0xelIuc8luDYY"><code data-page-node-id="ATRiDsflzAx7DYjzCsLKWV">python .tools/scripts/m5_parse_all.py --pdfs APM</code></td><td data-page-node-id="b7H0wwGiTxKkawT3BC7s5L">PDF 自备放 <code data-page-node-id="tpwkJLRjCDcubTYNCE4BDm">reference/API/</code>；已有 pages_clean 缓存可跳过</td></tr>
+  <tr data-page-node-id="Z0HAbaAh17c7K1wjGhzpbB"><td data-page-node-id="4PVA2OOvXO26AKuJcyhpgF">1</td><td data-page-node-id="6tLCTZXa2ExDZ3MGALbST1"><code data-page-node-id="DMTp5kwAtiLkFJk5kn3QU9">python .tools/scripts/cm_run_product.py APM --out audit/cm_APM --dry-run</code></td><td data-page-node-id="NPIjdveIbJZuEsaeWu6X8G">先探路校验，不改产物</td></tr>
+  <tr data-page-node-id="SOQJOj6D6NfEyyr8rdbXeh"><td data-page-node-id="k12aFERLKtz6jxHAPF98EO">2</td><td data-page-node-id="RS4IrANxvci8ZghhDIejmH"><code data-page-node-id="rmBr2k08z5EUglNhTaGYRV">python .tools/scripts/cm_run_product.py APM --out audit/cm_APM --workers 10</code></td><td data-page-node-id="cpA94Q6b0ULx17lHG0C7bs">真实跑 A 档全量验证</td></tr>
+  <tr data-page-node-id="W8TOjEkplYYEqWvZbayt6m"><td data-page-node-id="NZWW5jkQeeG750CYJCVCMh">3</td><td data-page-node-id="vDolmsC5QrbwoxpgF6dHP9"><code data-page-node-id="qS5e6cq3WS7gly8K1csqlu">python .tools/scripts/gen_results_xlsx.py audit/cm_APM/results.json -o audit/cm_APM/results.xlsx</code></td><td data-page-node-id="3pmIImjWqri9h0parfvceG">转可筛选 Excel</td></tr>
+  <tr data-page-node-id="00nZJ6OI1el10hJxPYvuef"><td data-page-node-id="9FUNXMddREKQGNR1gAcmbk">—</td><td data-page-node-id="ud4u5NtXzd8M9nHuaC2O0Y"><code data-page-node-id="AONXLIgjMDG757G0No1YnV">python .tools/scripts/run_all_products.py --workers 8</code></td><td data-page-node-id="i5R6i28SigibbX9PnKlEWx">替代 2+3：一键跑遍所有产品</td></tr>
+  <tr data-page-node-id="Sx83MpXrdXzj7mDkt7OCb0"><td data-page-node-id="CyhQWBppdffRbYYqI4AVT5">—</td><td data-page-node-id="zk1pSHKy44zsHjA3gEGEnf"><code data-page-node-id="7x4qkhFBkfjKWeDSgMUrTN">python .tools/scripts/cm_demo_server.py --port 8000</code></td><td data-page-node-id="aybMBbfLfPBek34Fa6innU">交互式 demo，浏览器打开 localhost:8000</td></tr>
+</table>
+
+<div class="note" data-page-node-id="w52RIcc5yXQPDFNiw403Xu">
+  <strong data-page-node-id="ZDsxJC09f6I2GIDCjTMJiz">关键配置点</strong>：LLM 地址在 <code data-page-node-id="Qq4fdkRW5rVIUAMFA0tNqU">auditlib/recall.py</code> 顶部（<code data-page-node-id="74lb333pZYJ4eh795L3YiZ">LLM_BASE_URL</code> / <code data-page-node-id="i9Cj3yISCW1qoTnbct4nrN">LLM_MODEL</code>，现为本地 vLLM），密钥走环境变量 <code data-page-node-id="Ixh24UMYfnk1VY45ufUKzw">LLM_KEY</code>；判定范围由 <code data-page-node-id="JfZTlTXbBBEvl88mfNUeus">spec/rule_categories_A7.json</code> 决定。
+</div>
+
+<footer data-page-node-id="GJd5ZH5rml5iSII09v6900">基于 portable 包源码梳理 · 规则库 61 条 / A 档执行 33 条（29 M + 4 O） · 主链路 m5_parse_all → cm_run_product → gen_results_xlsx</footer>
+
+</div>
+</body>
+</html>

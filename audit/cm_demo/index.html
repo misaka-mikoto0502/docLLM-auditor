@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API 完整匹配 · 逐类别判定 demo</title>
+<style>
+  :root{
+    --bg:#f5f6fa; --card:#fff; --line:#e3e6ef; --ink:#1c2333; --sub:#6b7280;
+    --red:#d92d20; --redbg:#fee4e2; --green:#0e9f6e; --greenbg:#def7ec;
+    --gray:#6b7280; --graybg:#f1f3f7; --amber:#b54708; --amberbg:#fef0c7; --blue:#1d4ed8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.55 -apple-system,Segoe UI,Roboto,"Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:#101c3a;color:#fff;padding:18px 28px}
+  header h1{margin:0;font-size:18px;font-weight:600}
+  header p{margin:4px 0 0;opacity:.75;font-size:12px}
+  main{max-width:1060px;margin:24px auto;padding:0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 1px 2px rgba(16,28,58,.05)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input[type=text]{flex:1 1 420px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  input[type=text]:focus{outline:none;border-color:var(--blue)}
+  .btn{padding:9px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500}
+  .btn:hover{border-color:#c7cede;background:#fafbfe}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.primary:disabled,.btn:disabled{opacity:.5;cursor:not-allowed}
+  .tag{font-size:11px;color:var(--sub);background:var(--graybg);padding:2px 8px;border-radius:20px;margin-left:8px}
+  .unit-meta{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin-top:10px;font-size:13px}
+  .unit-meta b{color:var(--sub);font-weight:500}
+  .unit-meta code{color:#0f4c81;background:#eef4ff;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Consolas,monospace}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;min-width:74px;text-align:center}
+  .b-confirmed{background:var(--redbg);color:var(--red)}
+  .b-dismissed{background:var(--greenbg);color:var(--green)}
+  .b-uncertain{background:var(--graybg);color:var(--gray)}
+  .b-call_fail{background:var(--amberbg);color:var(--amber)}
+  .cat-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+  .cat-head h2{margin:0;font-size:15px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f8f9fc;font-weight:600;color:var(--sub);font-size:12px;white-space:nowrap}
+  td.ev{color:#7a2e0e;font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-word;max-width:380px}
+  td.re{color:#333;max-width:340px}
+  .skel{color:var(--sub);padding:14px;text-align:center;font-size:13px}
+  .muted{color:var(--sub);font-size:12px}
+  .hidden{display:none}
+  #busy{position:fixed;top:0;left:0;right:0;background:rgba(16,28,58,.93);color:#fff;padding:9px;text-align:center;font-size:13px;z-index:10}
+  .cntbar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:10px;display:none}
+  .cntbar>div{height:100%;background:var(--blue);width:0;transition:width .3s}
+  .prelabel{font-size:12px;color:var(--sub);font-weight:600;margin:12px 0 5px;display:flex;align-items:center;gap:8px}
+  .prebox{background:#0f172a;color:#d3e0f0;border-radius:8px;padding:10px 12px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
+  .prebox:empty::before{content:"—";color:#64748b}
+  .prebox .dim{color:#64748b}
+  .pv-switch{font-size:12px;color:var(--blue);cursor:pointer;user-select:none;margin-left:auto}
+  .pv-switch:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div id="busy" class="hidden"></div>
+<header>
+  <h1>API 完整匹配 · 逐类别判定 demo</h1>
+  <p>选/输一个 API 条目 → 逐类别判定（路1）、整目录召回（路2）、或全量并行＝双路（路1+路2）。A 档 6 类 G1–G6，confirmed / dismissed / uncertain + grounding 校验；B/C 与全文档已剔除。底层 = 现有 cmmatch 逻辑 + 本地 LLM。</p>
+</header>
+<main>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <span style="font-weight:600">API 文档：</span>
+      <select id="product" class="btn"></select>
+      <span class="muted">切换产品后需重新载入条目（数据从本地文件懒加载）</span>
+    </div>
+    <div class="row">
+      <input type="text" id="q" list="unitlist" placeholder="选择或输入 / 部分方法+路径 模糊匹配，如 workspaces 或 GET /v1/{project_id}..." autocomplete="off">
+      <datalist id="unitlist"></datalist>
+      <button class="btn primary" id="loadBtn" disabled>载入条目</button>
+      <button class="btn" id="clearBtn">重置</button>
+    </div>
+    <div class="muted" id="hint" style="margin-top:8px">加载中…</div>
+    <div class="unit-meta hidden" id="umeta"></div>
+  </div>
+
+  <div class="card hidden" id="catPanel">
+    <div class="row">
+      <span style="font-weight:600">判定：</span>
+      <button class="btn primary" id="catBtn" disabled>整目录召回（路2）</button>
+      <button class="btn" id="allBtn">全量并行＝双路（6类 + 整目录）</button>
+      <span class="muted" id="prog"></span>
+      <span class="pv-switch" id="pvToggle">▸ 预览输入/提示词</span>
+    </div>
+    <div class="cntbar" id="cntbar"><div></div></div>
+    <div class="row" style="margin-top:12px" id="catBtns"></div>
+  </div>
+
+  <div class="card hidden" id="pvPanel">
+    <div class="row">
+      <span style="font-weight:600;font-size:14px">输入与提示词预览（不调 LLM，仅拼装）</span>
+      <select id="pvCat" class="btn"></select>
+      <button class="btn primary" id="pvGen">生成预览</button>
+      <span class="muted" id="pvMeta"></span>
+    </div>
+    <div class="prelabel">① 条目输入（全文，构建 prompt 时送入）<span class="muted" id="pvLen1"></span></div>
+    <pre class="prebox" id="pvInput"></pre>
+    <div class="prelabel">② 组装完成的提示词（条目 × 该类别全部规则）<span class="muted" id="pvLen2"></span></div>
+    <pre class="prebox" id="pvPrompt"></pre>
+  </div>
+
+  <div class="card" id="resPanel">
+    <h2 style="margin:0 0 6px;font-size:16px">判定结果 <span id="resApi" class="muted" style="font-weight:400"></span></h2>
+    <div id="results"><div class="skel">请先载入一个 API 条目。</div></div>
+  </div>
+</main>
+
+<script>
+let META=null, cur=null, PROD="ModelArts";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+async function getJSON(path,opt){const r=await fetch(path,opt);const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j;}
+function busy(txt){const b=$("#busy");if(txt){b.textContent=txt;b.classList.remove("hidden");}else b.classList.add("hidden");}
+
+const BADGE={confirmed:"b-confirmed",dismissed:"b-dismissed",uncertain:"b-uncertain",call_fail:"b-call_fail"};
+function badge(r){const cl=BADGE[r]||"b-uncertain";const label=r==="call_fail"?"调用失败":r;return `<span class="badge ${cl}">${label}</span>`;}
+
+function findUnitByValue(v){
+  v=(v||"").trim().toLowerCase();
+  if(!v)return null;
+  const cand=META.units.filter(u=>`${u.method} ${u.path}`.toLowerCase()===v);
+  if(cand.length)return cand[0];
+  const front=cand2=(META.units.filter(u=>`${u.method} ${u.path}`.toLowerCase().includes(v)));
+  return front.length?front[0]:null;
+}
+function showSuggest(v){
+  v=(v||"").toLowerCase();
+  const hits=META.units.filter(u=>`${u.method} ${u.path} ${u.title||""}`.toLowerCase().includes(v));
+  if(hits.length<=10){
+    $("#hint").textContent=hits.length?("未精确匹配；最接近："+hits.map(h=>`${h.method} ${h.path}`).join("；")):"未找到匹配条目。";
+  } else {
+    $("#hint").textContent=`未精确匹配；模糊命中 ${hits.length} 条，请输入更完整的方法+路径。`;
+  }
+}
+
+async function loadUnit(){
+  const v=$("#q").value;
+  const u=findUnitByValue(v);
+  if(!u){showSuggest(v);return;}
+  cur=u;
+  $("#umeta").classList.remove("hidden");
+  $("#umeta").innerHTML=`
+    <b>方法/路径</b><code>${esc(u.method)} ${esc(u.path)}</code>
+    <b>接口名称</b><span>${esc(u.title||"—")}</span>
+    <b>章节</b><span>${esc(u.chapter||"—")}</span>
+    <b>起始页码</b><span>第 ${u.start_page} 页</span>`;
+  $("#resApi").textContent=`· ${u.method} ${u.path}`;
+  $("#catPanel").classList.remove("hidden");
+  $("#catBtn").disabled=false;
+  $("#results").innerHTML="<div class='skel'>条目已载入，选择类别（路1）或整目录召回（路2）开始判定。</div>";
+  $("#prog").textContent="";
+  // 重置预览框(换条目后旧内容作废)
+  $("#pvInput").textContent="";$("#pvPrompt").textContent="";
+  $("#pvLen1").textContent="";$("#pvLen2").textContent="";$("#pvMeta").textContent="";
+  window.scrollTo({top:$("#catPanel").offsetTop-10,behavior:"smooth"});
+}
+
+async function judgeOne(cat,btn,asPartOfAll){
+  if(!cur){return;}
+  const prev=btn?btn.textContent:null;
+  if(btn){btn.disabled=true;btn.textContent=btn.textContent+" …";}
+  if(!asPartOfAll)busy(`判定 类${cat.id} ${cat.name} 中（调用本地 LLM）…`);
+  const resWire=$("#results");
+  const box=document.createElement("div");box.className="cat-wrap";box.id=`cat-${cat.id}`;
+  box.innerHTML=`<div class="cat-head"><h2>类${cat.id} ${esc(cat.name)}</h2><span class="skel">判定中…</span></div>`;
+  const head=box.querySelector(".cat-head .skel");
+  resWire.prepend(box);
+  try{
+    const rec=await getJSON("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({i:cur.i,cat_id:cat.id,product:PROD})});
+    head.outerHTML=`<span class="muted" style="margin-left:auto">${
+      Array.isArray(rec.per_rule)?rec.per_rule.length:0} 条规则 · ${rec.dt?s(rec.dt)+"s":""}</span>`;
+    renderBox(box,cat,rec);
+  }catch(e){
+    head.outerHTML=`<span class="badge b-call_fail">失败</span>`;
+    box.insertAdjacentHTML("beforeend",`<div class="muted">${esc(e.message)}</div>`);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=prev;}
+    if(!asPartOfAll)busy(false);
+  }
+}
+function s(x){return Math.round(x*10)/10;}
+
+function renderBox(box,cat,rec){
+  const lines=(rec.per_rule||[]).map(r=>{
+    return `<tr>
+      <td><code>${esc(r.rule_no)}</code></td>
+      <td>${badge(r.result)}</td>
+      <td>${r.grounded?"是":"—"}</td>
+      <td class="ev">${esc(r.evidence||"")}</td>
+      <td class="re">${esc(r.reason||"")}</td></tr>`;
+  }).join("");
+  box.insertAdjacentHTML("beforeend",`
+    <table><thead><tr><th>规则</th><th>结果</th><th>grounded</th><th>证据（逐字）</th><th>原因</th></tr></thead>
+    <tbody>${lines||"<tr><td colspan=5 class='skel'>per_rule 为空或调用失败</td></tr>"}</tbody></table>
+    <div class="muted" style="margin-top:6px">摘要：${esc(rec.summary||"")}</div>`);
+}
+
+async function judgeAll(){
+  if(!cur)return;
+  busy("全量并行＝双路判定中：（路1 六类 + 路2 整目录，调用本地 LLM）…");
+  $("#results").innerHTML="<div class='skel'>全量并行判定中…</div>";
+  $("#prog").textContent="";
+  try{
+    const r=await getJSON("/api/judge_all",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({i:cur.i,product:PROD})});
+    $("#results").innerHTML="";
+    const sumBox=document.createElement("div");sumBox.className="cat-wrap";
+    sumBox.innerHTML=`<div class="cat-head"><h2>全量并行＝双路召回（路1 六类 + 路2 整目录）</h2>
+      <span class="muted" style="margin-left:auto">墙钟 ${s(r.wall_s)}s</span></div>`;
+    $("#results").appendChild(sumBox);
+    r.categories.forEach(rec=>{
+      const isCat=rec.mode==="catalog";
+      const cnt={confirmed:0,dismissed:0,uncertain:0};
+      (rec.per_rule||[]).forEach(p=>{if(p.result in cnt)cnt[p.result]++;});
+      const box=document.createElement("div");box.className="cat-wrap";
+      box.innerHTML=`<div class="cat-head"><h2>${isCat?`路2 ${esc(rec.cat_name)}`:`类${rec.cat_id} ${esc(rec.cat_name)}（路1）`}</h2>
+        <span class="muted" style="margin-left:auto">${(rec.per_rule||[]).length} 规则 · confirmed ${cnt.confirmed} / dismissed ${cnt.dismissed} / uncertain ${cnt.uncertain} · ${s(rec.dt)}s</span></div>`;
+      renderBox(box,{id:rec.cat_id,name:rec.cat_name},rec);
+      $("#results").appendChild(box);
+    });
+    $("#prog").textContent=`完成 · ${s(r.wall_s)}s`;
+  }catch(e){
+    $("#results").innerHTML=`<div class='skel'>失败: ${esc(e.message)}</div>`;
+  }finally{busy(false);}
+}
+
+async function judgeCatalog(){
+  if(!cur)return;
+  const btn=$("#catBtn");
+  busy("路2 整目录召回 判定中（调用本地 LLM）…");
+  const resWire=$("#results");
+  const box=document.createElement("div");box.className="cat-wrap";box.id="cat-99";
+  box.innerHTML=`<div class="cat-head"><h2>路2 整目录召回</h2><span class="skel">判定中…</span></div>`;
+  const head=box.querySelector(".cat-head .skel");
+  resWire.prepend(box);
+  try{
+    const rec=await getJSON("/api/judge_catalog",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({i:cur.i,product:PROD})});
+    head.outerHTML=`<span class="muted" style="margin-left:auto">${Array.isArray(rec.per_rule)?rec.per_rule.length:0} 条规则 · ${rec.dt?s(rec.dt)+"s":""}</span>`;
+    renderBox(box,{id:99,name:"整目录召回（路2）"},rec);
+  }catch(e){
+    head.outerHTML=`<span class="badge b-call_fail">失败</span>`;
+    box.insertAdjacentHTML("beforeend",`<div class="muted">${esc(e.message)}</div>`);
+  }finally{busy(false);}
+  if(btn)btn.disabled=false;
+}
+
+let pvShown=false;
+function populatePvCat(){
+  const sel=$("#pvCat");sel.innerHTML="";
+  META.categories.forEach(c=>{const o=document.createElement("option");o.value=c.id;o.textContent=`类${c.id} ${c.name}`;sel.appendChild(o);});
+  if(META.catalog){
+    const o=document.createElement("option");o.value=99;o.textContent=`路2 整目录召回（${META.catalog.n_rules} 条）`;
+    sel.appendChild(o);
+  }
+}
+async function pvGen(){
+  if(!cur)return;
+  const cat_id=parseInt($("#pvCat").value,10);
+  const meta=$("#pvMeta");meta.textContent="生成中…";
+  try{
+    const r=await getJSON(`/api/prompt?i=${cur.i}&cat_id=${cat_id}&product=${PROD}`);
+    $("#pvInput").textContent=r.unit_text||"";
+    $("#pvPrompt").textContent=r.prompt||"";
+    $("#pvLen1").textContent=`(${(r.unit_text||"").length} 字)`;
+    $("#pvLen2").textContent=`(${r.prompt_chars} 字 / ${Math.ceil(r.prompt_chars/4)} token 约) 规则:${r.rules.join(",")}`;
+    $("#pvMeta").textContent=`${r.cat} · 第 ${r.start_page} 页`;
+  }catch(e){$("#pvMeta").textContent="失败:"+e.message;}
+}
+$("#pvToggle").onclick=()=>{
+  pvShown=!pvShown;
+  const p=$("#pvPanel");p.classList.toggle("hidden",!pvShown);
+  $("#pvToggle").textContent=pvShown?"▾ 收起":"▸ 预览输入/提示词";
+  if(pvShown&&!$("#pvPrompt").textContent.trim())pvGen();
+};
+$("#pvGen").onclick=pvGen;
+$("#loadBtn").onclick=loadUnit;
+$("#clearBtn").onclick=()=>{
+  cur=null;$("#q").value="";$("#umeta").classList.add("hidden");$("#catPanel").classList.add("hidden");
+  $("#catBtn").disabled=true;
+  $("#results").innerHTML="<div class='skel'>请先载入一个 API 条目。</div>";$("#resApi").textContent="";
+};
+$("#q").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();loadUnit();}});
+
+(async()=>{try{await init();}catch(e){$("#hint").textContent="初始化失败: "+e.message;}})();
+
+function populateProducts(){
+  const sel=$("#product");sel.innerHTML="";
+  META.products.forEach(p=>{
+    const o=document.createElement("option");o.value=p.id;
+    let lab=p.label;
+    if(p.n_total!=null){
+      lab+=`（${p.n_units} 条${p.n_dep?` · 废${p.n_dep}`:""}）`;
+    }
+    o.textContent=lab;
+    if(p.id===PROD)o.selected=true;
+    sel.appendChild(o);
+  });
+  sel.onchange=switchProduct;
+}
+function refreshUnitList(){
+  const dl=$("#unitlist");dl.innerHTML="";
+  META.units.forEach(u=>{const o=document.createElement("option");o.value=`${u.method} ${u.path}`;dl.appendChild(o);});
+  const depNote=META.n_dep?`（已排除 ${META.n_dep} 条废弃 API）`:"";
+  const catTxt=($("#catBtns").childElementCount>0)
+    ?[...$("#catBtns").children].map(b=>(b.textContent.replace(/^类/,"").split(" ")[0])).join("")
+    :META.categories.map(c=>c.id).join("、");
+  $("#hint").textContent=`【${PROD}】${META.n_units} 条未废弃 API 条目${depNote}。A 档 6 类（G1–G6，${META.catalog?.n_rules||34} 条）+ 整目录召回（路2）；全量并行＝双路。B/C 与全文档已剔除。`;
+}
+async function switchProduct(){
+  PROD=$("#product").value;
+  busy("切换产品，加载本地数据…");
+  cur=null;$("#q").value="";$("#umeta").classList.add("hidden");
+  $("#catPanel").classList.add("hidden");$("#pvPanel").classList.add("hidden");$("#pvToggle").textContent="▸ 预览输入/提示词";
+  $("#catBtn").disabled=true;
+  $("#results").innerHTML="<div class='skel'>请先载入一个 API 条目。</div>";$("#resApi").textContent="";
+  try{
+    META=await getJSON(`/api/meta?product=${PROD}`);
+    refreshUnitList();
+    populateProducts();
+  }catch(e){
+    $("#hint").textContent="切换失败: "+e.message;
+  }finally{busy(false);}
+}
+
+async function init(){
+  META=await getJSON("/api/meta");
+  PROD=META.product||"ModelArts";
+  populateProducts();
+  refreshUnitList();
+  const cw=$("#catBtns");
+  META.categories.forEach(c=>{
+    const b=document.createElement("button");b.className="btn";b.id=`cb-${c.id}`;
+    b.textContent=`类${c.id} ${c.name}`;b.title=`规则: ${c.rules.join(", ")}`;
+    b.onclick=()=>judgeOne(c,b,false);cw.appendChild(b);
+  });
+  populatePvCat();
+  $("#loadBtn").disabled=false;
+  $("#catBtn").onclick=judgeCatalog;
+  $("#allBtn").onclick=judgeAll;
+}
+</script>
+</body>
+</html>
