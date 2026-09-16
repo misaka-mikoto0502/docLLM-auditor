@@ -1,15 +1,15 @@
 """cm_demo_server.py — 单网页 demo：选产品(API 文档)→ 选/输一个 API 条目 → 判定违规。
 
-判定集 = A 档 6 单元级类别(G1-G6, 33条, spec/rule_categories_A7.json)；B/C 档与
-全文档(DOC) 已剔除，不在 demo 执行集内（2026-08-19 复核：ASY-010 归 B，单条目 A 由 34 调为 33）。底层完全复用现有逻辑：
+判定集 = 单条目档单元级类别(G1-G6, spec/rule_categories.json)；聚合档/流程档与
+全文档(DOC) 已剔除，不在 demo 执行集内（近期复核：ASY-010 归聚合档）。底层完全复用现有逻辑：
   * cmmatch.adjudicate(unit, rules) —— 路1：一条目×一类别 → per_rule 判定(走本地 vLLM)
   * cmmatch.catalog_adjudicate(unit, rules) —— 路2：整目录召回，条目×整个规则目录一次调入
   * pdf_lib.load_rules / segment.segment_apis —— 规则库与条目
 仅 stdlib(http.server)，无第三方依赖。产物：audit/cm_demo/index.html。
 
 产品数据源（本地文件，懒加载并缓存）：
-  * ModelArts  → audit/work/pages_clean.json
-  * MaaS/TaurusDB/gaussdb/dws/ecs/aom/codearts → audit/work/m5/<id>/pages_clean.json
+  * sample  → audit/work/pages_clean.json
+  * svc-a…svc-j → audit/work/m5/<id>/pages_clean.json
 
 用法: python .tools/scripts/cm_demo_server.py [--port 8000]
 浏览器打开 http://localhost:8000
@@ -24,17 +24,17 @@ sys.path.insert(0, SCRIPTS)
 ROOT = os.path.dirname(os.path.dirname(SCRIPTS))
 DEMO_DIR = os.path.join(ROOT, "audit", "cm_demo")
 
-CONFIG = os.path.join(ROOT, "spec", "rule_categories_A7.json")
+CONFIG = os.path.join(ROOT, "spec", "rule_categories.json")
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
 INDEX = os.path.join(DEMO_DIR, "index.html")
 
 from auditlib import pdf_lib, segment, cmmatch, deprec
 
 # ---------- 产品注册表 + 懒加载缓存 ----------
-PRODUCTS = [{"id": "ModelArts", "label": "ModelArts",
+PRODUCTS = [{"id": "sample", "label": "示例产品",
              "path": os.path.join(ROOT, "audit", "work", "pages_clean.json")}]
-for _n in ["MaaS", "TaurusDB", "gaussdb", "dws", "ecs", "aom", "codearts",
-           "APM", "DBSS"]:
+for _n in ["svc-a", "svc-b", "svc-c", "svc-d", "svc-e", "svc-f", "svc-g",
+           "svc-h", "svc-i"]:
     PRODUCTS.append({"id": _n, "label": _n,
                      "path": os.path.join(ROOT, "audit", "work", "m5", _n, "pages_clean.json")})
 
@@ -43,8 +43,8 @@ _prod_lock = threading.Lock()
 
 
 def product(name):
-    """懒加载某产品的 pages+units，进程内缓存；name 缺失默认 ModelArts。"""
-    name = name or "ModelArts"
+    """懒加载某产品的 pages+units，进程内缓存；name 缺失默认示例产品。"""
+    name = name or "sample"
     with _prod_lock:
         if name in _prod:
             return _prod[name]
@@ -63,10 +63,10 @@ def product(name):
 # ---------- 一次性加载(规则库/类别，全局通用) ----------
 _by_no = pdf_lib.load_rules(KB)["by_no"]
 _cfg = json.load(open(CONFIG, encoding="utf-8"))
-_UNIT_CATS = _cfg["unit_categories"]                 # 路1：A 档 6 单元级类别(G1-G6, 34条)
-# 全文档剔除：整篇级(G7/DOC-010..030)与 B/C 档均不在 demo 执行集内
+_UNIT_CATS = _cfg["unit_categories"]                 # 路1：单条目档单元级类别(G1-G6)
+# 全文档剔除：整篇级(G7/DOC-010..030)与聚合档/流程档均不在 demo 执行集内
 _DOC_CATS = []
-# 路2·整目录召回的规则目录 = 全部 A 档单元级规则(跨 6 类合一锅，一次调入判定)
+# 路2·整目录召回的规则目录 = 全部单条目档单元级规则(跨类合一锅，一次调入判定)
 _CATALOG_ALL = [r for c in _UNIT_CATS for r in c["rules"]]
 _lock = threading.Lock()
 
@@ -84,8 +84,8 @@ def _resolve_rules(c):
 
 
 def _judge_all(prod, unit):
-    """单条目 全量并行 = 双路召回：路1 = A 档 6 个单元级类别(G1-G6)，路2 = 整目录召回。
-    全文档(G7/DOC)与 B/C 档不在执行集内。"""
+    """单条目 全量并行 = 双路召回：路1 = 单条目档单元级类别(G1-G6)，路2 = 整目录召回。
+    全文档(G7/DOC)与聚合档/流程档不在执行集内。"""
     tasks = [(c, "unit") for c in _UNIT_CATS] + [
         ({"id": 99, "name": "整目录召回", "rules": _CATALOG_ALL}, "catalog"),
     ]
@@ -139,7 +139,7 @@ class H(BaseHTTPRequestHandler):
                 self._send(500, {"error": f"index.html 缺失: {INDEX}"})
             return
         if u.path == "/api/meta":
-            pid = q.get("product", [""])[0] or "ModelArts"
+            pid = q.get("product", [""])[0] or "sample"
             try:
                 prod = product(pid)
             except KeyError as e:
@@ -169,7 +169,7 @@ class H(BaseHTTPRequestHandler):
             except Exception:
                 self._send(400, {"error": "need i & cat_id"})
                 return
-            pid = q.get("product", [""])[0] or "ModelArts"
+            pid = q.get("product", [""])[0] or "sample"
             try:
                 prod = product(pid)
             except KeyError as e:
@@ -224,7 +224,7 @@ class H(BaseHTTPRequestHandler):
             self._send(400, {"error": f"bad request: {e}"})
             return
         i = data.get("i")
-        pid = data.get("product") or "ModelArts"
+        pid = data.get("product") or "sample"
         try:
             prod = product(pid)
         except KeyError as e:

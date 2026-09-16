@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""gen_rule_A_doc.py — 生成「A 类单条目规则整合分组」审阅文档。
+"""gen_rule_doc.py — 生成「单条目规则整合分组」审阅文档。
 
-标准（2026-08-19 严格化复核）：A 档 = 仅凭【一条 API 条目 + 该规则】即可直接判
+标准（近期严格化复核）：单条目档 = 仅凭【一条 API 条目 + 该规则】即可直接判
 （方法/路径/参数/头/状态码/响应字段），证据可锚定该条目原文 ⇒ 逐条审计。
-据此剔出三类不构成"单条目 A"的规则：
+据此剔出三类不构成"单条目直判"的规则：
   * DOC-010/020/030 —— 整篇(文档)级：单条目永远给不出证据（模板/修订历史/跨版本迁移）。
-  * ASY-010 —— 需跨接口聚合：要求"另提供按标识查状态的接口"，单条目无法证伪 ⇒ 归 B。
+  * ASY-010 —— 需跨接口聚合：要求"另提供按标识查状态的接口"，单条目无法证伪 ⇒ 归聚合档。
 
-单条目 A = 37 − 3(DOC) − 1(ASY) = 33 条，压缩整合为 6 个均衡新类（每类 5-6 条）。
-产物 spec/A类规则整合_7类.md（格式对齐《全部规则清单_ABC分组.md》）。
+单条目直判规则全量，压缩整合为若干均衡新类（每类 5-6 条）。
+产物 spec/规则归类整合.md。
 
-用法: python .tools/scripts/gen_rule_A_doc.py
+用法: python .tools/scripts/gen_rule_doc.py
 """
 import os, sys, json, datetime
 from collections import OrderedDict
@@ -18,14 +18,14 @@ from collections import OrderedDict
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(SCRIPTS))
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
-OUT = os.path.join(ROOT, "spec", "A类规则整合_7类.md")
+OUT = os.path.join(ROOT, "spec", "规则归类整合.md")
 
 kb = json.load(open(KB, encoding="utf-8"))
 rules = [r for r in kb["rules"] if r.get("option") in ("Mandatory", "Optional")
          and r.get("no")]
-assert len(rules) == 58
+assert rules, "规则库为空"
 
-# 37 条 = A 档(源)全量；其中 DOC×3 整篇级、ASY-010 跨接口聚合 → 不入单条目 A
+# 单条目档(源)全量；其中 DOC×3 整篇级、ASY-010 跨接口聚合 → 不入单条目直判
 A_FULL = ["URI-010","URI-020","URI-030","URI-040","URI-050","VER-010",
           "COD-010","COD-020","COD-030","COD-040",
           "STC-010","STC-020","STC-030","STC-040","ASY-010",
@@ -34,14 +34,13 @@ A_FULL = ["URI-010","URI-020","URI-030","URI-040","URI-050","VER-010",
           "BAS-070","BAS-100","QUE-040","QUE-060","COM-010","TIM-010",
           "FIL-010","FIL-020","FIL-030","ERR-010",
           "DOC-010","DOC-020","DOC-030"]
-assert len(set(A_FULL)) == 37
+assert len(set(A_FULL)) == len(A_FULL), "A_FULL 前缀须唯一"
 
 DOC_RULES = ["DOC-010", "DOC-020", "DOC-030"]     # 整篇级，非单条目
-ASY_TO_B = ["ASY-010"]                            # 跨接口聚合 -> B
+ASY_TO_B = ["ASY-010"]                            # 跨接口聚合 -> 聚合档
 A = [p for p in A_FULL if p not in DOC_RULES and p not in ASY_TO_B]
-assert len(A) == 33
 
-# 单条目 A 33 条 -> 6 个均衡新类（每类 5-6 条），不再含 DOC / ASY
+# 单条目直判规则 -> 若干个均衡新类（每类 5-6 条），不再含 DOC / ASY
 GROUP = [
     ("请求 URI 与版本号", "G1",
      ["URI-010", "URI-020", "URI-030", "URI-040", "URI-050", "VER-010"]),
@@ -58,7 +57,7 @@ g2rules = {}
 for name, gid, gset in GROUP:
     g2rules[gid] = set(gset)
 flat = [r for gset in g2rules.values() for r in gset]
-assert len(flat) == len(set(flat)) == 33, "单条目 A 须 33 条、无重叠"
+assert len(flat) == len(set(flat)), "规则前缀须无重叠"
 assert set(flat) == set(A), set(flat) ^ set(A)
 for gid, gset in g2rules.items():
     assert 3 <= len(gset) <= 7, f"{gid} 长度须在 3-7: {len(gset)}"
@@ -67,7 +66,7 @@ by_no = {r["no"]: r for r in rules}
 by_base = {p: next(r for no, r in by_no.items() if no.startswith(p)) for p in A + DOC_RULES}
 mo = lambda r: "M" if r["option"] == "Mandatory" else "O"
 
-# 原生分类 -> 目标组 映射（展示 14 -> 6 压缩；DOC/ASY 两类移出）
+# 原生分类 -> 目标组 映射（展示压缩；DOC/ASY 两类移出）
 native_map = []
 for p in A:
     gid = next(gid for gid, gset in g2rules.items() if p in gset)
@@ -78,26 +77,26 @@ for c, g in native_map:
     nat2g[c][g] += 1
 
 L = []
-L.append("# A 类单条目规则整合分组（33 条 · 6 类）\n")
-L.append("> 标准：**单条目 A** = 仅凭【一条 API 条目 + 该规则】即可直接判（方法/路径/参数/头/"
+L.append("# 单条目规则整合分组\n")
+L.append("> 标准：**单条目档** = 仅凭【一条 API 条目 + 该规则】即可直接判（方法/路径/参数/头/"
          "状态码/响应字段），证据可锚定该条目原文。逐条审计。\n")
-L.append("> 已剔出（2026-08-19 复核）：**DOC-010/020/030**（整篇/文档级，单条目给不出证据）；"
-         "**ASY-010**（需跨接口聚合『另提供查状态的接口』→ B 档）。**33** 条 A 压缩整合"
-         "为 6 个均衡新类（每类 5–6 条）。\n")
+L.append("> 已剔出（近期复核）：**DOC-010/020/030**（整篇/文档级，单条目给不出证据）；"
+         "**ASY-010**（需跨接口聚合『另提供查状态的接口』→ 聚合档）。全部 A 条压缩整合"
+         "为若干均衡新类（每类 5–6 条）。\n")
 L.append(f"> 生成 {datetime.datetime.now().isoformat()} ｜ 数据源 `spec/spec_rules.json` ｜ "
-         f"单条目 A 共 {len(flat)} 条 · {len(GROUP)} 类（每类 "
+         f"单条目档规则分组整合（每类 "
          f"{min(len(s) for _, _, s in GROUP)}–{max(len(s) for _, _, s in GROUP)} 条）\n")
 L.append("> **图例**：M=Mandatory(强制) · O=Optional(建议) ｜「来源分类」列 = 源文档原生分类\n")
 L.append("## 判定轴\n")
-L.append("单条目 A 档：从一条 API 条目（方法/路径/参数/头/状态码/响应字段）**直接可判**，"
-         "证据锚定该条目原文 ⇒ 逐条审计。DOC(整篇级)×3 与 ASY(跨接口→B) 不在本集合内。\n")
-L.append("## 整合映射（原生 14 类 → 新 6 类；DOC/ASY 两原生类移出）\n")
+L.append("单条目档：从一条 API 条目（方法/路径/参数/头/状态码/响应字段）**直接可判**，"
+         "证据锚定该条目原文 ⇒ 逐条审计。DOC(整篇级)×3 与 ASY(跨接口→聚合档) 不在本集合内。\n")
+L.append("## 整合映射（原生分类 → 新分组；DOC/ASY 两原生类移出）\n")
 L.append("| 原生分类 | 并入新类 | 条数 |")
 L.append("|----------|---------|------|")
 for c, gd in nat2g.items():
     cells = "、".join(f"{g}({n})" for g, n in gd.items())
     L.append(f"| {c} | {cells} | {sum(gd.values())} |")
-L.append("| ~~Asynchronous operations~~ | → B（ASY-010，需跨接口聚合） | 0 |")
+L.append("| ~~Asynchronous operations~~ | → 聚合档（ASY-010，需跨接口聚合） | 0 |")
 L.append("| ~~API Reference Document Specifications~~ | → 整篇级（DOC-010/020/030） | 0 |")
 
 for idx, (name, gid, gset) in enumerate(GROUP, 1):
@@ -110,17 +109,15 @@ for idx, (name, gid, gset) in enumerate(GROUP, 1):
         zs = (r.get("zh_summary") or "").replace("|", "\\|")
         L.append(f"| {n} | `{r['no']}` | {mo(r)} | {r['category']} | {title} | {zs} |")
 
-L.append("\n---\n\n## 附：为什么单条目 A 是 33 条（58 − B/C 21 − DOC 3 − ASY→B 1）\n")
-L.append("- **58 条编号规则**中：单条目 A **33** 条、整篇级(DOC) **3** 条、B 档 **4** 条"
-         "（原 VER-030/QUE-050/BAS-060 + 本次 ASY-010）、C 档 **18** 条两文档无证据。")
+L.append("\n---\n\n## 附：档位划分依据\n")
 L.append("- **DOC-010/020/030**：判定须整篇文档（统一模板/修订历史/跨版本迁移与 @deprecated），"
-         "单条 API 条目无证据 → 整篇级单独处理，不入单条目 A。")
+         "单条 API 条目无证据 → 整篇级单独处理，不入单条目档。")
 L.append("- **ASY-010**：『异步接口须另提供按标识查状态/结果的接口』需跨接口聚合证伪 "
-         "→ 归 B 档。")
-L.append("- 其余 33 条：核心条款均可在**单条目内**读判（如 VER-010 的 URI 带 vX、STC-030 的"
+         "→ 归聚合档。")
+L.append("- 其余各条：核心条款均可在**单条目内**读判（如 VER-010 的 URI 带 vX、STC-030 的"
          "批量动词/207/resources 数组、BAS-070 的入参易获取）；跨接口/流程次条款留 "
          "inapplicable/uncertain，不降级。")
-L.append("- 新 6 类内规则**全部不同、无重叠**；每类落在 5-6 条均衡区间，DOC/ASY 已不占位。")
+L.append("- 新分组内规则**全部不同、无重叠**；每类落在 5-6 条均衡区间，DOC/ASY 已不占位。")
 
 out = "\n".join(L) + "\n"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)

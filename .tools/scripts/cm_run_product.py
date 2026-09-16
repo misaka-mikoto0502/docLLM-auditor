@@ -1,13 +1,13 @@
-"""cm_run_product.py — 按产品跑 A 档全量匹配（读产品已有的 pages_clean.json 缓存，不重提 PDF）。
+"""cm_run_product.py — 按产品跑单条目档全量匹配（读产品已有的 pages_clean.json 缓存，不重提 PDF）。
 
-与 cmmatch_run.py（面向 ModelArts、缓存路径写死）的区别：
+与 cmmatch_run.py（面向示例产品、缓存路径写死）的区别：
   * 输入 = 任意产品已有的清洗页缓存（audit/work/pages_clean.json 或 audit/work/m5/<pid>/pages_clean.json）
-  * 类别 = spec/rule_categories_A7.json 全部 7 类（G1-G6 单元级 + G7 整篇 DOC），不含双路召回目录
+  * 类别 = spec/rule_categories.json 全部类别（G1-G6 单元级 + G7 整篇 DOC），不含双路召回目录
   * 断点续跑/并发/熔断/产物 与 cmmatch_run 同构（results.jsonl/json, stats.json, results.md, run_log.txt）
 
 用法:
-  python .tools/scripts/cm_run_product.py APM [--out audit/cm_APM] [--workers 6]
-      [--max-fail 10] [--cats 1,2,3] [--limit 0] [--dry-run] [--pdf <APM pdf 路径>]
+  python .tools/scripts/cm_run_product.py sample [--out audit/cm_sample] [--workers 6]
+      [--max-fail 10] [--cats 1,2,3] [--limit 0] [--dry-run] [--pdf <示例产品 pdf 路径>]
 """
 import os, sys, json, time, argparse, threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -19,13 +19,13 @@ from auditlib import pdf_lib, segment, cmmatch, recall
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
-CONFIG = os.path.join(ROOT, "spec", "rule_categories_A7.json")
+CONFIG = os.path.join(ROOT, "spec", "rule_categories.json")
 WORK = os.path.join(ROOT, "audit", "work")
 DEFAULT_OUT = os.path.join(ROOT, "audit", "cm_product")
 
 
 def product_pages(pid: str) -> str:
-    if pid == "ModelArts":
+    if pid == "sample":
         return os.path.join(WORK, "pages_clean.json")
     return os.path.join(WORK, "m5", pid, "pages_clean.json")
 
@@ -52,7 +52,7 @@ def build_tasks(units, cfg, by_no):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("product", help="产品 id，如 APM / ModelArts")
+    ap.add_argument("product", help="产品 id，如 sample")
     ap.add_argument("--out", default=DEFAULT_OUT)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--max-fail", type=int, default=10)

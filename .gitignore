@@ -18,8 +18,8 @@ refresh-models/last_discover.txt
 *_backup.json
 .DS_Store
 
-spec/A类规则整合_7类.md
-spec/rule_categories_A7.json
+spec/规则归类整合.md
+spec/rule_categories.json
 spec/spec_rules.json
 files/
 docs/

@@ -13,7 +13,7 @@ import urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 from . import detect
 
-SERVICE = "ModelArts"
+SERVICE = "sample"
 def set_service(name: str) -> None:
     global SERVICE
     SERVICE = name
@@ -22,8 +22,8 @@ def set_service(name: str) -> None:
 # LLM 配置（本地 vLLM，OpenAI 兼容；密钥走环境变量 LLM_KEY）
 # =====================================================================
 LLM_ENABLED   = True
-LLM_MODEL     = "dsv4"
-LLM_BASE_URL  = "http://36.134.97.115:8900/v1"
+LLM_MODEL     = os.environ.get("LLM_MODEL", "local-model")
+LLM_BASE_URL  = os.environ.get("LLM_BASE_URL", "http://127.0.0.1:8900/v1")
 LLM_KEY       = os.environ.get("LLM_KEY", "vllm-token")
 
 BATCH_SIZE     = int(os.environ.get("LLM_BATCH", "16"))
@@ -104,8 +104,8 @@ def build_semantic_prompt(batch, kb, sem) -> str:
     )
 
 
-# Windows 会从注册表自动读系统代理(http://proxy.huawei.com:8080)，urllib 默认走它；
-# 该代理在本环境 DNS 解析失败(getaddrinfo failed)。LLM 是局域网 vLLM，须直连，禁用代理。
+# Windows 会从注册表自动读系统代理（企业内网代理），urllib 默认走它；
+# 该代理对局域网地址解析不稳定。LLM 是局域网 vLLM，须直连，禁用代理。
 _NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 

@@ -10,8 +10,8 @@
 
 用法:
   python .tools/scripts/m5_parse_all.py            # 全部(已缓存则秒回)
-  python .tools/scripts/m5_parse_all.py --pdfs APM  # 只跑指定(关键词匹配文件名)
-  python .tools/scripts/m5_parse_all.py --pdfs APM --force  # 强制重解析(忽略缓存)
+  python .tools/scripts/m5_parse_all.py --pdfs svc-a  # 只跑指定(关键词匹配文件名)
+  python .tools/scripts/m5_parse_all.py --pdfs svc-a --force  # 强制重解析(忽略缓存)
 
 产物: <portable>/audit/work/m5/<svc>/{pages_clean.json, units.json} + m5_report.md
 """
@@ -30,16 +30,16 @@ from auditlib import pdf_lib, segment
 
 # 服务名 -> 文件名片段；新增文档在此追加。解析有缓存，重复跑只重切分。
 TARGETS = {
-    "MaaS": "MaaS模型即服务",
-    "TaurusDB": "TaurusDB",
-    "gaussdb": "api-gaussdb",
-    "dws": "dws-api",
-    "ecs": "ecs-api",
-    "aom": "aom-api-zh",
-    "codearts": "codearts-api",
-    "APM": "应用性能管理(APM)",
-    "DBSS": "HC-DBSS",
-    "ModelArts": "ModelArts",  # 主项目 ModelArts 放 audit/work/pages_clean.json（顶层），此映射可选
+    "svc-a": "svc-a",
+    "svc-b": "svc-b",
+    "svc-c": "svc-c",
+    "svc-d": "svc-d",
+    "svc-e": "svc-e",
+    "svc-f": "svc-f",
+    "svc-g": "svc-g",
+    "svc-h": "svc-h",
+    "svc-i": "svc-i",
+    "sample": "sample",  # 示例产品 sample 放 audit/work/pages_clean.json（顶层），此映射可选
 }
 
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""run_all_products.py — 全量跑所有产品 A 档召回（G1-G6 单元级 33 条 + G7 整篇 DOC×3）。
+"""run_all_products.py — 全量跑所有产品单条目档召回（G1-G6 单元级 + G7 整篇 DOC）。
 
 对每个有 pages_clean.json 缓存的产品：
   1) cm_run_product.py <pid> --out audit/cm_ALL/<pid> --workers N   → results.{json,jsonl,md},stats.json,run_log.txt
@@ -7,7 +7,7 @@
 带断点续跑/熔断（每个产品独立续跑：已完成的 jsonl 任务自动跳过）。
 
 用法:
-  python .tools/scripts/run_all_products.py [--workers 8] [--only APM,ecs] [--out audit/cm_ALL]
+  python .tools/scripts/run_all_products.py [--workers 8] [--only sample,svc-a] [--out audit/cm_ALL]
 """
 import os, sys, subprocess, argparse
 
@@ -16,7 +16,7 @@ SCRIPTS = os.path.join(ROOT, ".tools", "scripts")
 WORK = os.path.join(ROOT, "audit", "work")
 
 def products():
-    out = ["ModelArts"]
+    out = ["sample"]
     m5 = os.path.join(WORK, "m5")
     if os.path.isdir(m5):
         out += sorted(d for d in os.listdir(m5)

@@ -1,7 +1,7 @@
-"""cmmatch.py — A 档「一条 API 条目 × 一个规则类别」完整匹配：核心逻辑(不含入口编排)。
+"""cmmatch.py — 单条目档「一条 API 条目 × 一个规则类别」完整匹配：核心逻辑(不含入口编排)。
 
-设计(2026-08-13 定稿, 方案 A)：
-  * 每条目 × 每个 A 档类别(该类全部规则全文) 单次调用 → 每规则 verdict。
+设计(近期定稿)：
+  * 每条目 × 每个单条目档类别(该类全部规则全文) 单次调用 → 每规则 verdict。
   * 目标=错杀一千不放过一个：召回重；同一违规常被多条规则冗余覆盖(如 STC-010/040)。
   * grounding：confirmed 的 evidence 必须逐字落地条目原文(整段 → token 级回退)，否则降 uncertain。
   * 断点续跑由入口 cmmatch_run.py 的 results.jsonl 追加机制实现(本模块不带 IO 状态)。
@@ -20,7 +20,7 @@ CONTEXT_CAP = int(os.environ.get("CMM_CAP", "28000"))
 
 def _cap_text(text, rules, cap):
     """信息完整性优先的截断：保留【首】+【各规则关键字命中窗口】+【尾】。
-    教训(2026-08-13)：不能只取开头——违规证据常在中部/尾部(状态码/响应字段)。
+    教训：不能只取开头——违规证据常在中部/尾部(状态码/响应字段)。
     被截部分不送模型→grounding 只对送去的内容生效，安全；代价=截断处的违规可能漏(可控)。"""
     if len(text) <= cap:
         return text
@@ -66,7 +66,7 @@ def norm(s):
 def grounded(ev, text):
     """evidence 是否落地于条目原文。先整段(剥空后)子串；失败再 token 级：
     逗号/顿号/分号/空格 分隔的每片(去空)都必须命中。
-    教训(2026-08-13)：LLM 常给"字段名枚举"作证据(update_time,create_time,status)，
+    教训：LLM 常给"字段名枚举"作证据(update_time,create_time,status)，
     整段子串必失败→把真违规降级。用 token 回退保住召回(错杀不漏)。"""
     e, t = norm(ev), norm(text)
     if not e:
@@ -139,9 +139,9 @@ def _rule_cards(rules):
 # 装配顺序固定=任务→铁律→示例→输入→规则→输出契约。关键指令放首尾、输入/规则带中间，
 # 减小长文信息丢失；示例不绑定具体规则号(用 甲/乙/丙 占位)→任何类别复用不误导；
 # 输出契约单一副本→消除两处重复与漂移。
-# 2026-08-14 由用户审核 + 全量误判(反着判/脑补)驱动重构。
+# 由用户审核 + 全量误判(反着判/脑补)驱动重构。
 # ---------------------------------------------------------------------
-TASK = """你是华为云 API 文档**完整匹配审计**。给定【一个输入】与【一个类别全部规则全文】，
+TASK = """你是云平台 API 文档**完整匹配审计**。给定【一个输入】与【一个类别全部规则全文】，
 逐一条判定【输入】在**每条规则**下是否违规（可在规则间并行，逐条给 verdict）。"""
 
 IRON_RULES = """## 铁律（违反其一即算不合格）
@@ -171,8 +171,8 @@ IRON_RULES = """## 铁律（违反其一即算不合格）
   第5步·产出：该规则一条 JSON 记录；reason ≤2 句中文。"""
 
 EXAMPLES = """## 判型示例（规则名用 甲/乙/丙 占位，规则正文引自 spec 规范原文）
-# A=真实缺陷单 OTCPAAS-3030；B/C=对照构造用例，仅示判定边界。
-【A·confirmed】来源=真实单 OTCPAAS-3030（APM 删除AK/SK误用POST）
+# A=真实缺陷单 TICKET-3030；B/C=对照构造用例，仅示判定边界。
+【A·confirmed】来源=真实单 TICKET-3030（示例服务 删除AK/SK误用POST）
 输入：删除 AK/SK（V2）
 POST /v2/systemmng/access-ak-sk/delete-ak-sk
 规则甲（STC-010 类）：[Rule] The DELETE operation is used to delete resources. [Rule] The POST operation is applicable to create or non-CRUD scenarios.
@@ -422,7 +422,7 @@ def collect_stats(records):
 def render_md(records, stats, cat_names=None):
     L = []
     A = lambda s="": L.append(s)
-    A("# A 档完整匹配 · 运行结果")
+    A("# 单条目档完整匹配 · 运行结果")
     A()
     A(f"- 任务 ok={stats['task_ok']} / fail={stats['task_fail']} ｜ 触及条目 {stats['units_touched']} ｜ "
       f"confirmed&grounded 去重违规组合 {stats['confirmed_grounded']}({len(stats['dedup_confirmed_rules'])} 个规则)")

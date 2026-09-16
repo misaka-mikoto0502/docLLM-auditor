@@ -11,7 +11,7 @@
 用法:
   # Phase 1: 构建所有 prompt（纯 Python，不调 LLM）
   python agent_audit.py build --pdf "<PDF路径>" --out audit/cm_agent [--cats 1,2,3] [--limit 0]
-  python agent_audit.py build --product APM --out audit/cm_agent   # 从已有缓存构建
+  python agent_audit.py build --product sample --out audit/cm_agent   # 从已有缓存构建
 
   # Phase 2: Agent 自主推理（由技能 SKILL.md 指导 Agent 执行，非命令行）
   #   → 读取 _agent_prompts.json
@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(SCRIPTS, "auditlib"))
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
-CONFIG = os.path.join(ROOT, "spec", "rule_categories_A7.json")
+CONFIG = os.path.join(ROOT, "spec", "rule_categories.json")
 WORK = os.path.join(ROOT, "audit", "work")
 
 from auditlib import pdf_lib, segment, cmmatch
@@ -39,7 +39,7 @@ from auditlib import pdf_lib, segment, cmmatch
 # Phase 1: build — 构建所有 prompt
 # =====================================================================
 def product_pages_path(pid: str) -> str:
-    if pid == "ModelArts":
+    if pid == "sample":
         return os.path.join(WORK, "pages_clean.json")
     return os.path.join(WORK, "m5", pid, "pages_clean.json")
 

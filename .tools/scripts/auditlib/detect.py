@@ -1,8 +1,8 @@
 """detect.py — 规则召回 + 检查点判定层。
 
 * 对单个 API 单元召回候选规则，并用“客观探测器”判定是否违规。
-* 每个探测器:  doc-level(只读文档即可发现)  —— 与 450 条问题单里的“文档直接对比可发现=是”对齐。
-* 产出 finding(dict)，字段与 450 条问题单同构：
+* 每个探测器:  doc-level(只读文档即可发现)  —— 与历史问题单里的“文档直接对比可发现=是”对齐。
+* 产出 finding(dict)，字段与历史问题单同构：
     service, no, title, method, path, rule_no,
     category(问题分类), priority(Blocker/High/Medium/Low),
     check(命中的检查点), evidence(原文证据), desc(中文问题描述),
@@ -13,7 +13,7 @@
 import re
 
 # 服务名：可由 audit_run 通过 set_service() 覆盖(泛化到其它云服务文档)
-SERVICE = "ModelArts"
+SERVICE = "sample"
 def set_service(name: str) -> None:
     global SERVICE
     SERVICE = name
@@ -44,7 +44,7 @@ def F(unit, rule_no, category, priority, check, evidence, desc, concern, conf="h
 # ---------------- path 工具 ----------------
 def path_segments(path):
     """返回非空段列表；{placeholders} 段保持原样。剔除查询串(供 URI 类探测用)，
-    避免示例查询串把资源段污染(2026-08-13 教训：unit path 本身干净，但仍防御)。"""
+    避免示例查询串把资源段污染(教训：unit path 本身干净，但仍防御)。"""
     p = (path or "").split("?", 1)[0].rstrip("?")
     return [s for s in p.split("/") if s]
 
@@ -176,7 +176,7 @@ def _query_names(unit, cap=8):
 def d_query_camel(unit):
     """ARG-010: query 参数名 snake_case(禁 camelCase)。
     来源一：URI path 内 query；来源二：正文**示例请求 URL** 的 query —— 主查此处，
-    否则 ARG-010 对 query 名形同虚设(unit path 干净、几乎无 query，见 2026-08-13 教训)。
+    否则 ARG-010 对 query 名形同虚设(unit path 干净、几乎无 query，见教训)。
     (注: body 字段名 camelCase 亦可审，但扁平文本提取会因表格换行产生大量断行碎片假阳性，
      暂不在自动探测中开启，见 README 已知局限。)"""
     params = _query_names(unit)

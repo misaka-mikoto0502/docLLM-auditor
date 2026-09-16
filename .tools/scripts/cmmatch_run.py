@@ -1,7 +1,7 @@
-"""cmmatch_run.py — A 档完整匹配 · 生产运行入口。
+"""cmmatch_run.py — 单条目档完整匹配 · 生产运行入口。
 
 用法:
-  python .tools/scripts/cmmatch_run.py [--config spec/rule_categories_ABC.json]
+  python .tools/scripts/cmmatch_run.py [--config spec/rule_categories.json]
       [--out audit/cm] [--workers 6] [--max-fail 10]
       [--cats 1,2,3,4,5,6,8] [--limit 0] [--dry-run] [--force-extract]
 
@@ -42,9 +42,9 @@ sys.path.insert(0, os.path.join(SCRIPTS, "auditlib"))
 sys.path.insert(0, os.path.join(SCRIPTS, "..", "pylibs"))
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DEFAULT_PDF = os.path.join(ROOT, "reference", "ModelArts_API参考-pdf.pdf")
+DEFAULT_PDF = os.path.join(ROOT, "reference", "sample.pdf")
 DEFAULT_OUT = os.path.join(ROOT, "audit", "cm")
-CONFIG = os.path.join(ROOT, "spec", "rule_categories_ABC.json")
+CONFIG = os.path.join(ROOT, "spec", "rule_categories.json")
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
 
 from auditlib import pdf_lib, segment, recall
@@ -85,7 +85,7 @@ def task_key(t):
 
 def load_done_keys(jsonl):
     """只把「成功」的任务视为已完成(续跑时跳过)；失败/解析失败的记录不算完成，下次自动重试。
-    教训(2026-08-13)：若把 fail 也当 done，几小时运行中偶发的 LLM 失败将永远被跳过、形成数据空洞。"""
+    教训：若把 fail 也当 done，几小时运行中偶发的 LLM 失败将永远被跳过、形成数据空洞。"""
     done = set()
     if os.path.exists(jsonl):
         for line in open(jsonl, encoding="utf-8"):

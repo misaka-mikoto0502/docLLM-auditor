@@ -6,7 +6,7 @@
   * 违规汇总 —— 按规则聚合：confirmed 去重接口数 + 接口列举(换行)
 
 用法:
-  python .tools/scripts/gen_results_xlsx.py audit/cm_APM/results.json -o audit/cm_APM/results.xlsx
+  python .tools/scripts/gen_results_xlsx.py audit/cm_sample/results.json -o audit/cm_sample/results.xlsx
 """
 import os, sys, json, argparse
 from collections import OrderedDict, Counter

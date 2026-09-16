@@ -27,7 +27,7 @@ TITLE_BACK_RE = re.compile(r"^(\d{1,2}(?:\.\d{1,3})+)\s+(.+?)\s*$")
 
 
 def segment_apis(pages: list[dict]) -> list[dict]:
-    """按「API 标题即条目起点」切分（2026-08-14 修正, 原为 URI 标签驱动）。
+    """按「API 标题即条目起点」切分（近期修正, 原为 URI 标签驱动）。
 
     版式：每 API = 「章节标题 → API 标题(N.N 中文 - English) → 功能介绍/调试/授权信息前导
     → URI 标签 → METHOD path → 契约正文」。本实现：
@@ -117,7 +117,7 @@ def segment_apis(pages: list[dict]) -> list[dict]:
                 close()
                 method, path = found
                 tail_lines = []     # 被并入 path 的折行续段行(同时保留进单元文本)
-                # 折行 URI 续段合并(2026-08-19)：长 URI 在 PDF 里折成两行时，
+                # 折行 URI 续段合并：长 URI 在 PDF 里折成两行时，
                 # parse_uri_line 只取到方法行前半段。若紧随其后的非空行为"纯 ASCII 路径续片"
                 # (非方法、非表格行、非 http 前缀、无空格、含 / 或 ? 或以 { 开头)，视为续段并入 path。
                 # 仅当方法行 path 以 '-' 或 '/' 结尾才直接拼接，避免吞掉"请求参数"等正文。

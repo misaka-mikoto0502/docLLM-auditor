@@ -1,16 +1,16 @@
-"""showcase_run.py — 展示用全量验证：10 个『直接对比=是』票证 → 映射 APM 真实单元 → 走主线裁决 → Excel。
+"""showcase_run.py — 展示用全量验证：内嵌示例票证 → 映射示例服务真实单元 → 走主线裁决 → Excel。
 
-从 `reference/API问题单结构化解析_2026-07-30.xlsx` 摘取「文档直接对比可发现=是」、且**单条目
-规则可直接判**的 10 个 APM 缺陷（都落在 A 档 33 条内），端到端走一遍项目主线流程：
+从示例票证清单摘取「文档直接对比可发现=是」、且**单条目
+规则可直接判**的若干示例服务缺陷，端到端走一遍项目主线流程：
 
-  读产品清洗缓存 → segment 切 API 单元 → 按票证端点定位真实单元 → 每条目×所属 A7 类别 →
+  读产品清洗缓存 → segment 切 API 单元 → 按票证端点定位真实单元 → 每条目×所属单元类别 →
   LLM 并行裁决(adjudicate) → results.json → (gen_results_xlsx 转 Excel)
 
-产物: audit/showcase_APM/{results.json,results.md,run_log.txt,results.xlsx}
-并行: ThreadPoolExecutor，默认 8 并发；10 个票证映射到 7 个单元×类别任务，约 1-3 分钟内跑完。
+产物: audit/showcase_sample/{results.json,results.md,run_log.txt,results.xlsx}
+并行: ThreadPoolExecutor，默认 8 并发；内嵌示例票证映射到若干单元×类别任务，约 1-3 分钟内跑完。
 
 用法:
-  python .tools/scripts/showcase_run.py [--product APM] [--workers 8] [--out audit/showcase_APM] [--dry-run]
+  python .tools/scripts/showcase_run.py [--product sample] [--workers 8] [--out audit/showcase_sample] [--dry-run]
 """
 import os, sys, json, time, argparse, threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -20,51 +20,51 @@ sys.path.insert(0, os.path.join(ROOT, ".tools", "scripts"))
 from auditlib import pdf_lib, segment, cmmatch
 
 KB = os.path.join(ROOT, "spec", "spec_rules.json")
-CONFIG = os.path.join(ROOT, "spec", "rule_categories_A7.json")
+CONFIG = os.path.join(ROOT, "spec", "rule_categories.json")
 
 # ---------------------------------------------------------------------------
-# 10 个票证(来自问题单, 直接对比=是, 单条目 A 档可判)
-#   issue       : 问题单 Issue key
+# 内嵌示例票证(示例用途, 直接对比=是, 单条目档可判)
+#   issue       : 票证 Issue key
 #   title       : 展示用一句话(违规要点)
-#   endpoint    : 用于在 APM 单元中定位(路径子串)
-#   rules       : 目标 A 档规则前缀(用于选类别/展示)
+#   endpoint    : 用于在示例服务单元中定位(路径子串)
+#   rules       : 目标规则前缀(用于选类别/展示)
 # ---------------------------------------------------------------------------
 TICKETS = [
-    dict(issue="OTCPAAS-1178", rules=["ARG-010"],
+    dict(issue="TICKET-1178", rules=["ARG-010"],
          endpoint="/view/trace/get-trace-events",
          title="获取调用链全量数据: next_spanId/totalTime 应为 snake_case(ARG-010)"),
-    dict(issue="OTCPAAS-1180", rules=["ARG-010"],
+    dict(issue="TICKET-1180", rules=["ARG-010"],
          endpoint="/view/metric/trend",
          title="获取趋势图: latest_data_Time 大小写违规(ARG-010)"),
-    dict(issue="OTCPAAS-1117", rules=["ARG-010", "COM-010"],
+    dict(issue="TICKET-1117", rules=["ARG-010", "COM-010"],
          endpoint="/cmdb/tag/get-env-tag-list",
          title="查询环境标签: descp/gmt_create 命名不规范(ARG-010/COM-010)"),
-    dict(issue="OTCPAAS-1156", rules=["COM-010", "ARG-010"],
+    dict(issue="TICKET-1156", rules=["COM-010", "ARG-010"],
          endpoint="/view/trace/span-search",
          title="查询 Span 数据: biz_id/biz_code 命名怪异(COM-010/ARG-010)"),
-    dict(issue="OTCPAAS-1177", rules=["COM-010"],
+    dict(issue="TICKET-1177", rules=["COM-010"],
          endpoint="/view/trace/get-trace-events",
          title="获取调用链全量数据: biz_id/biz_code 字段冗余(COM-010)"),
-    dict(issue="OTCPAAS-1104", rules=["COM-010", "URI-050"],
+    dict(issue="TICKET-1104", rules=["COM-010", "URI-050"],
          endpoint="/cmdb/business/get-business-list",
          title="查询应用列表: business 应为 application(COM-010/URI-050)"),
-    dict(issue="OTCPAAS-3028", rules=["URI-050"],
+    dict(issue="TICKET-3028", rules=["URI-050"],
          endpoint="/cmdb/business/get-business-list",
          title="应用列表端点过长应简化(URI-050)"),
-    dict(issue="OTCPAAS-3208", rules=["STC-010"],
+    dict(issue="TICKET-3208", rules=["STC-010"],
          endpoint="/apm-service/monitor-item-mgr/save-monitor-item-config",
          title="保存/修改操作误用 POST 应 PUT(STC-010)"),
-    dict(issue="OTCPAAS-3214", rules=["COM-010"],
+    dict(issue="TICKET-3214", rules=["COM-010"],
          endpoint="/systemmng/get-ak-sk-list",
          title="AK/SK 列表: descp 应为 description(COM-010)"),
-    dict(issue="OTCPAAS-3098", rules=["STC-010"],
+    dict(issue="TICKET-3098", rules=["STC-010"],
          endpoint="/view/trace/span-search",
          title="查询类操作误用 POST 应 GET(STC-010)"),
 ]
 
 
 def resolve_category(rules, cfg):
-    """目标规则前缀 -> 所属 A7 单元类别 id 集合(去重)。"""
+    """目标规则前缀 -> 所属单元类别 id 集合(去重)。"""
     ids = set()
     for c in cfg["unit_categories"]:
         if any(r in c["rules"] for r in rules):
@@ -74,14 +74,14 @@ def resolve_category(rules, cfg):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--product", default="APM")
+    ap.add_argument("--product", default="sample")
     ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--out", default=os.path.join(ROOT, "audit", "showcase_APM"))
+    ap.add_argument("--out", default=os.path.join(ROOT, "audit", "showcase_sample"))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--regen", action="store_true",
                     help="只读已存在的 results.json 重渲染 results.md/stats.json(不调 LLM)")
     ap.add_argument("--all-cats", action="store_true",
-                    help="对每个样例单元跑全部 6 个 A 类别(而非只跑票证指向的类别)=真·全量验证")
+                    help="对每个样例单元跑全部单元类别(而非只跑票证指向的类别)=真·全量验证")
     a = ap.parse_args()
 
     cfg = json.load(open(CONFIG, encoding="utf-8"))
@@ -219,9 +219,9 @@ def pre(no):
 
 
 def write_md(recs, stats, path, cats_map, tasks):
-    L = ["# APM 展示用例·全量验证(10 票证)\n"]
-    L.append("> 源: API问题单结构化解析(2026-07-30)『文档直接对比可发现=是』单条目规则可直接判的 10 条"
-             f"；映射 APM 真实单元跑 A7 类别裁决。确认违规 {stats['confirmed']} 组合 / "
+    L = ["# 示例服务展示用例·全量验证(内嵌示例票证)\n"]
+    L.append("> 源: 示例票证清单『文档直接对比可发现=是』单条目规则可直接判的若干条"
+             f"；映射示例服务真实单元跑所属类别裁决。确认违规 {stats['confirmed']} 组合 / "
              f"{len(stats['dedup_confirmed_rules'])} 规则。\n")
     L.append("| 票证 | 目标规则 | 单元 | 结果 | 判定理由 |")
     L.append("|------|----------|------|------|----------|")

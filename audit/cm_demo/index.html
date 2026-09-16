@@ -58,7 +58,7 @@
 <div id="busy" class="hidden"></div>
 <header>
   <h1>API 完整匹配 · 逐类别判定 demo</h1>
-  <p>选/输一个 API 条目 → 逐类别判定（路1）、整目录召回（路2）、或全量并行＝双路（路1+路2）。A 档 6 类 G1–G6，confirmed / dismissed / uncertain + grounding 校验；B/C 与全文档已剔除。底层 = 现有 cmmatch 逻辑 + 本地 LLM。</p>
+  <p>选/输一个 API 条目 → 逐类别判定（路1）、整目录召回（路2）、或全量并行＝双路（路1+路2）。单条目档 6 类 G1–G6，confirmed / dismissed / uncertain + grounding 校验；聚合档/流程档与全文档已剔除。底层 = 现有 cmmatch 逻辑 + 本地 LLM。</p>
 </header>
 <main>
   <div class="card">
@@ -109,7 +109,7 @@
 </main>
 
 <script>
-let META=null, cur=null, PROD="ModelArts";
+let META=null, cur=null, PROD="sample";
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -308,7 +308,7 @@ function refreshUnitList(){
   const catTxt=($("#catBtns").childElementCount>0)
     ?[...$("#catBtns").children].map(b=>(b.textContent.replace(/^类/,"").split(" ")[0])).join("")
     :META.categories.map(c=>c.id).join("、");
-  $("#hint").textContent=`【${PROD}】${META.n_units} 条未废弃 API 条目${depNote}。A 档 6 类（G1–G6，${META.catalog?.n_rules||34} 条）+ 整目录召回（路2）；全量并行＝双路。B/C 与全文档已剔除。`;
+  $("#hint").textContent=`【${PROD}】${META.n_units} 条未废弃 API 条目${depNote}。单条目档 6 类（G1–G6，${META.catalog?.n_rules||34} 条）+ 整目录召回（路2）；全量并行＝双路。聚合档/流程档与全文档已剔除。`;
 }
 async function switchProduct(){
   PROD=$("#product").value;
@@ -328,7 +328,7 @@ async function switchProduct(){
 
 async function init(){
   META=await getJSON("/api/meta");
-  PROD=META.product||"ModelArts";
+  PROD=META.product||"sample";
   populateProducts();
   refreshUnitList();
   const cw=$("#catBtns");
